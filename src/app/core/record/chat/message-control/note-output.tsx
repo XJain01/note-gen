@@ -17,7 +17,7 @@ import { getFilePathOptions, getWorkspacePath, getGenericPathOptions } from "@/l
 import useTagStore from "@/stores/tag"
 import { CheckedState } from "@radix-ui/react-checkbox"
 import { BaseDirectory, readDir, writeTextFile } from "@tauri-apps/plugin-fs"
-import { Store } from "@tauri-apps/plugin-store"
+import { safeSetToStore } from "@/lib/tauri-utils"
 import { SquarePen, TriangleAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import { redirect } from 'next/navigation'
@@ -51,8 +51,7 @@ export function NoteOutput({chat}: {chat: Chat}) {
       await writeTextFile(pathOptions.path, content)
     }
     
-    const store = await Store.load('store.json');
-    await store.set('activeFilePath', title)
+    await safeSetToStore('activeFilePath', title)
     if (isRemove) {
       deleteTag(currentTagId)
     }

@@ -5,7 +5,7 @@ import { uploadFile as uploadGiteeFile, getFiles as giteeGetFiles } from '@/lib/
 import { uploadFile as uploadGitlabFile, getFiles as gitlabGetFiles, getFileContent as gitlabGetFileContent } from '@/lib/sync/gitlab';
 import { uploadFile as uploadGiteaFile, getFiles as giteaGetFiles, getFileContent as giteaGetFileContent } from '@/lib/sync/gitea';
 import { getSyncRepoName } from '@/lib/sync/repo-utils';
-import { Store } from '@tauri-apps/plugin-store';
+import { safeLoadStore, isTauriEnvironment } from '@/lib/tauri-utils';
 import { locales } from '@/lib/locales';
 import { ChatMode, AgentState, ToolCall } from '@/lib/agent/types';
 
@@ -172,6 +172,11 @@ const useChatStore = create<ChatState>((set, get) => ({
 
   chats: [],
   init: async (tagId: number) => {
+    // 如果不在 Tauri 环境中，跳过初始化
+    if (!isTauriEnvironment()) {
+      return
+    }
+    
     await initChatsDb()
     const data = await getChats(tagId)
     set({ chats: data })
@@ -218,14 +223,17 @@ const useChatStore = create<ChatState>((set, get) => ({
 
   locale: locales[0],
   getLocale: async () => {
-    const store = await Store.load('store.json');
-    const res = (await store.get<string>('note_locale')) || locales[0]
+    const store = await safeLoadStore('store.json');
+    const res = store ? (await store.get<string>('note_locale')) || locales[0] : locales[0]
     set({ locale: res })
   },
   setLocale: async (locale) => {
     set({ locale })
-    const store = await Store.load('store.json');
-    await store.set('note_locale', locale)
+    const store = await safeLoadStore('store.json');
+    if (store) {
+      await store.set('note_locale', locale)
+      await store.save()
+    }
   },
 
   clearChats: async (tagId) => {
@@ -259,11 +267,11 @@ const useChatStore = create<ChatState>((set, get) => ({
     const path = '.data'
     const filename = 'chats.json'
     const chats = await getAllChats()
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
     const jsonToBase64 = (data: Chat[]) => {
       return Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
     }
-    const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+    const primaryBackupMethod = store ? await store.get<string>('primaryBackupMethod') || 'github' : 'github';
     let result = false
     let files: any;
     let res;
@@ -355,8 +363,8 @@ const useChatStore = create<ChatState>((set, get) => ({
   downloadChats: async () => {
     const path = '.data'
     const filename = 'chats.json'
-    const store = await Store.load('store.json');
-    const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+    const store = await safeLoadStore('store.json');
+    const primaryBackupMethod = store ? await store.get<string>('primaryBackupMethod') || 'github' : 'github';
     let result = []
     let files;
     switch (primaryBackupMethod) {

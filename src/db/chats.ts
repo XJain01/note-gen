@@ -1,4 +1,5 @@
 import { getDb } from "./index"
+import { isTauriEnvironment } from '@/lib/tauri-utils';
 
 export type Role = 'system' | 'user'
 export type ChatType = 'chat' | 'note' | 'clipboard' | 'clear'
@@ -20,6 +21,11 @@ export interface Chat {
 
 // 创建 chats 表
 export async function initChatsDb() {
+  if (!isTauriEnvironment()) {
+    console.warn('Skipping chats database initialization: not in Tauri environment');
+    return;
+  }
+  
   const db = await getDb()
   await db.execute(`
     create table if not exists chats (

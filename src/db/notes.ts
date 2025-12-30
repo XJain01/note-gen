@@ -1,5 +1,6 @@
 import { BaseDirectory, exists, mkdir } from "@tauri-apps/plugin-fs"
 import { getDb } from "./index"
+import { isTauriEnvironment } from "@/lib/tauri-utils"
 
 export interface Note {
   id: number
@@ -12,6 +13,11 @@ export interface Note {
 
 // 创建 marks 表
 export async function initNotesDb() {
+  if (!isTauriEnvironment()) {
+    console.warn('Skipping notes database initialization: not in Tauri environment');
+    return;
+  }
+  
   const isExist = await exists('article', { baseDir: BaseDirectory.AppData})
   if (!isExist) {
     await mkdir('article', { baseDir: BaseDirectory.AppData})

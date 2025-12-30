@@ -1,6 +1,6 @@
 import { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeLoadStore, isTauriEnvironment } from './tauri-utils'
 
 /**
  * 获取当前工作区路径
@@ -8,9 +8,17 @@ import { Store } from '@tauri-apps/plugin-store'
  * 否则返回默认的 AppData/article 路径
  */
 export async function getWorkspacePath(): Promise<{ path: string, isCustom: boolean }> {
+  // 如果不在 Tauri 环境中，返回默认路径
+  if (!isTauriEnvironment()) {
+    return { 
+      path: 'article', 
+      isCustom: false 
+    }
+  }
+  
   // 查询本地存储
-  const store = await Store.load('store.json')
-  const workspacePath = await store.get<string>('workspacePath')
+  const store = await safeLoadStore('store.json')
+  const workspacePath = store ? await store.get<string>('workspacePath') : null
   
   // 如果设置了自定义工作区路径，则使用自定义路径
   if (workspacePath) {

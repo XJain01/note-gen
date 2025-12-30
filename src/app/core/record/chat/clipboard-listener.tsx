@@ -6,7 +6,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { v4 as uuid } from "uuid";
 import useChatStore from "@/stores/chat";
 import useTagStore from "@/stores/tag";
-import { Store } from "@tauri-apps/plugin-store";
+import { safeGetFromStore, isTauriEnvironment } from "@/lib/tauri-utils";
 
 export function ClipboardListener() {
   const { insert, chats, loading } = useChatStore()
@@ -14,8 +14,7 @@ export function ClipboardListener() {
   const { currentTagId } = useTagStore()
 
   async function readHandler() {
-    const store = await Store.load('store.json')
-    const isEnabled = await store.get<boolean>('clipboardMonitor')
+    const isEnabled = await safeGetFromStore<boolean>('clipboardMonitor', false)
     if (!isEnabled) return
     if (loading) return
     const hasImageRes = await hasImage()
@@ -67,6 +66,10 @@ export function ClipboardListener() {
   }, [chats]); 
 
   useEffect(() => {
+    if (!isTauriEnvironment()) {
+      return
+    }
+    
     let unlisten: UnlistenFn | undefined;
     
     async function initListen() {

@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { safeInvoke, isTauriEnvironment } from './tauri-utils';
 
 // 匹配 Rust 类型的接口定义
 export interface SearchItem {
@@ -61,16 +61,17 @@ export class RustFuzzySearch {
   // 执行模糊搜索
   async search(query: string): Promise<FuzzySearchResult[]> {
     if (!query) return [];
+    if (!isTauriEnvironment()) return [];
     
     try {
-      const rawResults = await invoke<Array<{item: SearchItem; refindex: number; score: number; matches: MatchInfo[]}>>('fuzzy_search', {
+      const rawResults = await safeInvoke<Array<{item: SearchItem; refindex: number; score: number; matches: MatchInfo[]}>>('fuzzy_search', {
         items: this.items,
         query,
         keys: this.options.keys,
         threshold: this.options.threshold || 0.3,
         includeScore: this.options.includeScore ?? true,
         includeMatches: this.options.includeMatches ?? true
-      });
+      }, []);
       
       return rawResults.map((result: { item: SearchItem; refindex: number; score: number; matches: MatchInfo[] }) => {
         const item = result.item;
@@ -95,16 +96,17 @@ export class RustFuzzySearch {
   // 执行并行模糊搜索（适用于大数据集）
   async searchParallel(query: string): Promise<FuzzySearchResult[]> {
     if (!query) return [];
+    if (!isTauriEnvironment()) return [];
     
     try {
-      const rawResults = await invoke<Array<{item: SearchItem; refindex: number; score: number; matches: MatchInfo[]}>>('fuzzy_search_parallel', {
+      const rawResults = await safeInvoke<Array<{item: SearchItem; refindex: number; score: number; matches: MatchInfo[]}>>('fuzzy_search_parallel', {
         items: this.items,
         query,
         keys: this.options.keys,
         threshold: this.options.threshold || 0.3,
         includeScore: this.options.includeScore ?? true,
         includeMatches: this.options.includeMatches ?? true
-      });
+      }, []);
 
       return rawResults.map((result: { item: SearchItem; refindex: number; score: number; matches: MatchInfo[] }) => {
         const item = result.item;

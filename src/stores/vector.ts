@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { initVectorDb, processAllMarkdownFiles, processMarkdownFile, checkEmbeddingModelAvailable } from '@/lib/rag';
 import { checkRerankModelAvailable } from '@/lib/ai';
-import { Store } from "@tauri-apps/plugin-store";
+import { safeGetFromStore, safeSetToStore, safeLoadStore } from '@/lib/tauri-utils';
 import { toast } from '@/hooks/use-toast';
 
 interface VectorState {
@@ -43,10 +43,9 @@ const useVectorStore = create<VectorState>((set, get) => ({
       await initVectorDb();
       
       // 读取用户设置
-      const store = await Store.load('store.json');
-      const isVectorDbEnabled = await store.get<boolean>('isVectorDbEnabled') || false;
-      const isRagEnabled = await store.get<boolean>('isRagEnabled') || false;
-      const lastProcessTime = await store.get<number>('lastVectorProcessTime') || null;
+      const isVectorDbEnabled = await safeGetFromStore<boolean>('isVectorDbEnabled', false);
+      const isRagEnabled = await safeGetFromStore<boolean>('isRagEnabled', false);
+      const lastProcessTime = await safeGetFromStore<number | null>('lastVectorProcessTime', null);
       
       set({ 
         isVectorDbEnabled, 
@@ -74,46 +73,36 @@ const useVectorStore = create<VectorState>((set, get) => ({
   
   // 设置向量数据库启用状态
   setVectorDbEnabled: async (enabled: boolean) => {
-    try {
-      const store = await Store.load('store.json');
-      await store.set('isVectorDbEnabled', enabled);
-      
-      set({ isVectorDbEnabled: enabled });
-      
-      // 如果启用向量数据库，检查嵌入模型是否可用
-      if (enabled) {
-        const modelAvailable = await get().checkEmbeddingModel();
-        if (!modelAvailable) {
-          toast({
-            title: '向量数据库',
-            description: '未配置嵌入模型或模型不可用，请在AI设置中配置嵌入模型',
-            variant: 'destructive',
-          });
-          
-          // 自动禁用
-          await store.set('isVectorDbEnabled', false);
-          set({ isVectorDbEnabled: false });
-        }
+    await safeSetToStore('isVectorDbEnabled', enabled);
+    
+    set({ isVectorDbEnabled: enabled });
+    
+    // 如果启用向量数据库，检查嵌入模型是否可用
+    if (enabled) {
+      const modelAvailable = await get().checkEmbeddingModel();
+      if (!modelAvailable) {
+        toast({
+          title: '向量数据库',
+          description: '未配置嵌入模型或模型不可用，请在AI设置中配置嵌入模型',
+          variant: 'destructive',
+        });
+        
+        // 自动禁用
+        await safeSetToStore('isVectorDbEnabled', false);
+        set({ isVectorDbEnabled: false });
       }
-    } catch (error) {
-      console.error('设置向量数据库状态失败:', error);
     }
   },
   
   // 设置RAG启用状态
   setRagEnabled: async (enabled: boolean) => {
-    try {
-      const store = await Store.load('store.json');
-      await store.set('isRagEnabled', enabled);
-      
-      set({ isRagEnabled: enabled });
-      
-      // 如果启用RAG但向量数据库未启用，自动启用向量数据库
-      if (enabled && !get().isVectorDbEnabled) {
-        await get().setVectorDbEnabled(true);
-      }
-    } catch (error) {
-      console.error('设置RAG状态失败:', error);
+    await safeSetToStore('isRagEnabled', enabled);
+    
+    set({ isRagEnabled: enabled });
+    
+    // 如果启用RAG但向量数据库未启用，自动启用向量数据库
+    if (enabled && !get().isVectorDbEnabled) {
+      await get().setVectorDbEnabled(true);
     }
   },
   
@@ -148,8 +137,7 @@ const useVectorStore = create<VectorState>((set, get) => ({
       
       // 更新处理时间和状态
       const currentTime = Date.now();
-      const store = await Store.load('store.json');
-      await store.set('lastVectorProcessTime', currentTime);
+      await safeSetToStore('lastVectorProcessTime', currentTime);
       
       set({ 
         isProcessing: false,

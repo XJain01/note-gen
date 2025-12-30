@@ -1,4 +1,5 @@
-import { db } from './index';
+import { getDb } from './index';
+import { isTauriEnvironment } from '@/lib/tauri-utils';
 
 // 向量数据库表结构定义
 export interface VectorDocument {
@@ -12,6 +13,12 @@ export interface VectorDocument {
 
 // 初始化向量数据库表
 export async function initVectorDb() {
+  if (!isTauriEnvironment()) {
+    console.warn('Skipping vector database initialization: not in Tauri environment');
+    return;
+  }
+  
+  const db = await getDb();
   await db.execute(`
     create table if not exists vector_documents (
       id integer primary key autoincrement,
@@ -33,6 +40,7 @@ export async function initVectorDb() {
 
 // 插入或更新向量文档
 export async function upsertVectorDocument(doc: Omit<VectorDocument, 'id'>) {
+  const db = await getDb();
   await db.execute(
     "insert into vector_documents (filename, chunk_id, content, embedding, updated_at) values ($1, $2, $3, $4, $5) on conflict(filename, chunk_id) do update set content = excluded.content, embedding = excluded.embedding, updated_at = excluded.updated_at",
     [doc.filename, doc.chunk_id, doc.content, doc.embedding, doc.updated_at]);
@@ -40,6 +48,7 @@ export async function upsertVectorDocument(doc: Omit<VectorDocument, 'id'>) {
 
 // 获取指定文件名的所有向量文档
 export async function getVectorDocumentsByFilename(filename: string) {
+  const db = await getDb();
   return await db.select<VectorDocument[]>(
     "select * from vector_documents where filename = $1 order by chunk_id",
     [filename]);
@@ -47,6 +56,7 @@ export async function getVectorDocumentsByFilename(filename: string) {
 
 // 通过文件名删除向量文档
 export async function deleteVectorDocumentsByFilename(filename: string) {
+  const db = await getDb();
   await db.execute(
     "delete from vector_documents where filename = $1",
     [filename]);
@@ -54,6 +64,7 @@ export async function deleteVectorDocumentsByFilename(filename: string) {
 
 // 检查文件是否已存在于向量数据库中
 export async function checkVectorDocumentExists(filename: string) {
+  const db = await getDb();
   const result = await db.select<{ count: number }[]>(
     "select count(*) as count from vector_documents where filename = $1",
     [filename]);
@@ -67,6 +78,7 @@ export async function getSimilarDocuments(
   limit: number = 5,
   threshold: number = 0.7
 ): Promise<{id: number, filename: string, content: string, similarity: number}[]> {
+  const db = await getDb();
   // 获取所有文档向量
   const docs = await db.select<VectorDocument[]>(`
     select id, filename, content, embedding from vector_documents
@@ -116,6 +128,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 
 // 清空向量数据库
 export async function clearVectorDb() {
+  const db = await getDb();
   await db.execute(`
     delete from vector_documents
   `);
@@ -123,6 +136,7 @@ export async function clearVectorDb() {
 
 // 获取所有向量文档的文件名列表
 export async function getAllVectorDocumentFilenames() {
+  const db = await getDb();
   return await db.select<{filename: string}[]>(`
     select distinct filename from vector_documents
   `);

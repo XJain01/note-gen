@@ -10,7 +10,7 @@ import { NoData } from './no-data'
 import { v4 as uuid } from 'uuid'
 import { CheckCircle, LoaderCircle } from 'lucide-react'
 import { FolderCard } from './folder-card'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore } from '@/lib/tauri-utils'
 
 interface FileUploader {
   id: string
@@ -29,9 +29,8 @@ export default function Page() {
   const { fetchAllMarks } = useMarkStore()
 
   async function init() {
-    const store = await Store.load('store.json');
-    const githubImageAccessToken = await store.get<string>('githubImageAccessToken')
-    const githubImageUsername = await store.get<string>('githubImageUsername')
+    const githubImageAccessToken = await safeGetFromStore<string>('githubImageAccessToken', '')
+    const githubImageUsername = await safeGetFromStore<string>('githubImageUsername', '')
     if (githubImageAccessToken) {
       setAccessToken(githubImageAccessToken)
     }

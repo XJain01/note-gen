@@ -9,7 +9,7 @@ import useArticleStore from "@/stores/article";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { diffWordsWithSpace } from 'diff';
 import Vditor from "vditor";
-import { Store } from "@tauri-apps/plugin-store";
+import { safeLoadStore } from "@/lib/tauri-utils";
 import { Button } from "@/components/ui/button";
 import useSettingStore from "@/stores/setting";
 import { useEffect, useState, useRef } from "react";
@@ -33,8 +33,8 @@ export default function Sync({editor, disabled}: {editor?: Vditor, disabled?: bo
   async function handleSync() {
     try {
       // 获取主要备份方式设置
-      const store = await Store.load('store.json');
-      const backupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+      const store = await safeLoadStore('store.json');
+      const backupMethod = store ? await store.get<string>('primaryBackupMethod') || 'github' : 'github';
       
       // 检查是否有对应的访问令牌
       if (isLoading || 
@@ -44,13 +44,13 @@ export default function Sync({editor, disabled}: {editor?: Vditor, disabled?: bo
       setIsLoading(true);
       editor?.focus();
       
-      const activeFilePath = await store.get<string>('activeFilePath') || '';
+      const activeFilePath = store ? await store.get<string>('activeFilePath') || '' : '';
       
       // 获取上一次提交的记录内容
       let message = `Upload ${activeFilePath}`;
       
       // 如果有AI API Key，使用AI生成提交信息
-      const primaryModel = await store.get<string>('primaryModel');
+      const primaryModel = store ? await store.get<string>('primaryModel') : null;
       if (primaryModel) {
         let contentText = '';
         
@@ -228,8 +228,8 @@ export default function Sync({editor, disabled}: {editor?: Vditor, disabled?: bo
   async function handleAutoSync() {
     try {
       // 获取主要备份方式设置
-      const store = await Store.load('store.json');
-      const backupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+      const store = await safeLoadStore('store.json');
+      const backupMethod = store ? await store.get<string>('primaryBackupMethod') || 'github' : 'github';
       
       // 检查是否有对应的访问令牌
       if (isLoading || 
@@ -239,7 +239,7 @@ export default function Sync({editor, disabled}: {editor?: Vditor, disabled?: bo
       setIsLoading(true);
       editor?.focus();
       
-      const activeFilePath = await store.get<string>('activeFilePath') || '';
+      const activeFilePath = store ? await store.get<string>('activeFilePath') || '' : '';
       
       // 快速同步的提交信息
       const message = `Upload ${activeFilePath}（${t('quickSync')}）`;
@@ -357,7 +357,9 @@ export default function Sync({editor, disabled}: {editor?: Vditor, disabled?: bo
   // 设置编辑器自动同步功能
   useEffect(() => {
     const checkAutoSyncEligibility = async () => {
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json');
+      if (!store) return false;
+      
       const backupMethod = await store.get<string>('primaryBackupMethod') || 'github';
       
       // 检查自动同步条件

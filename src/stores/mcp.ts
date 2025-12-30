@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore, safeSetToStore, safeLoadStore } from '@/lib/tauri-utils'
 import type { MCPServerConfig, MCPServerState } from '@/lib/mcp/types'
 
 interface MCPState {
@@ -49,35 +49,27 @@ export const useMcpStore = create<MCPState>((set, get) => ({
   initialized: false,
   
   setEnabled: async (enabled: boolean) => {
-    const store = await Store.load('store.json')
-    await store.set('mcp.enabled', enabled)
-    await store.save()
+    await safeSetToStore('mcp.enabled', enabled)
     set({ enabled })
   },
   
   addServer: async (server: MCPServerConfig) => {
-    const store = await Store.load('store.json')
     const servers = [...get().servers, server]
-    await store.set('mcp.servers', servers)
-    await store.save()
+    await safeSetToStore('mcp.servers', servers)
     set({ servers })
   },
   
   updateServer: async (id: string, updates: Partial<MCPServerConfig>) => {
-    const store = await Store.load('store.json')
     const servers = get().servers.map(s =>
       s.id === id ? { ...s, ...updates } : s
     )
-    await store.set('mcp.servers', servers)
-    await store.save()
+    await safeSetToStore('mcp.servers', servers)
     set({ servers })
   },
   
   deleteServer: async (id: string) => {
-    const store = await Store.load('store.json')
     const servers = get().servers.filter(s => s.id !== id)
-    await store.set('mcp.servers', servers)
-    await store.save()
+    await safeSetToStore('mcp.servers', servers)
     
     // 同时清理状态和选中
     const serverStates = new Map(get().serverStates)
@@ -88,12 +80,10 @@ export const useMcpStore = create<MCPState>((set, get) => ({
   },
   
   toggleServerEnabled: async (id: string) => {
-    const store = await Store.load('store.json')
     const servers = get().servers.map(s =>
       s.id === id ? { ...s, enabled: !s.enabled } : s
     )
-    await store.set('mcp.servers', servers)
-    await store.save()
+    await safeSetToStore('mcp.servers', servers)
     set({ servers })
   },
   
@@ -108,9 +98,7 @@ export const useMcpStore = create<MCPState>((set, get) => ({
   },
   
   setSelectedServers: async (ids: string[]) => {
-    const store = await Store.load('store.json')
-    await store.set('mcp.selectedServerIds', ids)
-    await store.save()
+    await safeSetToStore('mcp.selectedServerIds', ids)
     set({ selectedServerIds: ids })
   },
   
@@ -120,34 +108,25 @@ export const useMcpStore = create<MCPState>((set, get) => ({
       ? selectedServerIds.filter(sid => sid !== id)
       : [...selectedServerIds, id]
     
-    const store = await Store.load('store.json')
-    await store.set('mcp.selectedServerIds', newSelected)
-    await store.save()
+    await safeSetToStore('mcp.selectedServerIds', newSelected)
     set({ selectedServerIds: newSelected })
   },
   
   clearSelectedServers: async () => {
-    const store = await Store.load('store.json')
-    await store.set('mcp.selectedServerIds', [])
-    await store.save()
+    await safeSetToStore('mcp.selectedServerIds', [])
     set({ selectedServerIds: [] })
   },
   
   loadMcpConfig: async () => {
-    try {
-      const store = await Store.load('store.json')
-      const enabled = await store.get<boolean>('mcp.enabled')
-      const servers = await store.get<MCPServerConfig[]>('mcp.servers')
-      const selectedServerIds = await store.get<string[]>('mcp.selectedServerIds')
-      
-      set({
-        enabled: enabled ?? false,
-        servers: servers ?? [],
-        selectedServerIds: selectedServerIds ?? [],
-      })
-    } catch (error) {
-      console.error('Failed to load MCP config:', error)
-    }
+    const enabled = await safeGetFromStore<boolean>('mcp.enabled', false)
+    const servers = await safeGetFromStore<MCPServerConfig[]>('mcp.servers', [])
+    const selectedServerIds = await safeGetFromStore<string[]>('mcp.selectedServerIds', [])
+    
+    set({
+      enabled,
+      servers,
+      selectedServerIds,
+    })
   },
   
   initMcpData: async () => {
@@ -157,38 +136,33 @@ export const useMcpStore = create<MCPState>((set, get) => ({
       return
     }
     
-    try {
-      const store = await Store.load('store.json')
-      const enabled = await store.get<boolean>('mcp.enabled')
-      const servers = await store.get<MCPServerConfig[]>('mcp.servers')
-      const selectedServerIds = await store.get<string[]>('mcp.selectedServerIds')
+    const enabled = await safeGetFromStore<boolean>('mcp.enabled', false)
+    const servers = await safeGetFromStore<MCPServerConfig[]>('mcp.servers', [])
+    const selectedServerIds = await safeGetFromStore<string[]>('mcp.selectedServerIds', [])
+    
+    set({
+      enabled,
+      servers,
+      selectedServerIds,
+      initialized: true,
+    })
+    
+    // 如果 MCP 功能已启用，自动连接已启用的服务器
+    if (enabled && servers && servers.length > 0) {
+      const { mcpServerManager } = await import('@/lib/mcp/server-manager')
       
-      set({
-        enabled: enabled ?? false,
-        servers: servers ?? [],
-        selectedServerIds: selectedServerIds ?? [],
-        initialized: true,
-      })
-      
-      // 如果 MCP 功能已启用，自动连接已启用的服务器
-      if (enabled && servers && servers.length > 0) {
-        const { mcpServerManager } = await import('@/lib/mcp/server-manager')
-        
-        // 延迟一点时间，确保页面完全加载
-        setTimeout(async () => {
-          for (const server of servers) {
-            if (server.enabled) {
-              try {
-                await mcpServerManager.connectServer(server)
-              } catch (error) {
-                console.error(`Failed to auto-connect server ${server.name}:`, error)
-              }
+      // 延迟一点时间，确保页面完全加载
+      setTimeout(async () => {
+        for (const server of servers) {
+          if (server.enabled) {
+            try {
+              await mcpServerManager.connectServer(server)
+            } catch (error) {
+              console.error(`Failed to auto-connect server ${server.name}:`, error)
             }
           }
-        }, 500)
-      }
-    } catch (error) {
-      console.error('Failed to initialize MCP data:', error)
+        }
+      }, 500)
     }
   },
 }))

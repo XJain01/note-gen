@@ -4,10 +4,7 @@
  */
 
 import CryptoJS from 'crypto-js'
-import { arch, platform } from '@tauri-apps/plugin-os'
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
-import { getVersion } from '@tauri-apps/api/app'
-import { invoke } from '@tauri-apps/api/core'
+import { isTauriEnvironment } from '@/lib/tauri-utils'
 
 // 配置常量
 const API_CONFIG = {
@@ -104,7 +101,12 @@ function generateSignature(
  * 每个点分隔的数字占3位，1000进一位
  */
 async function getVersionCode(): Promise<number> {
+  if (!isTauriEnvironment()) {
+    return 1
+  }
+  
   try {
+    const { getVersion } = await import('@tauri-apps/api/app')
     // 从运行时获取版本号
     const version = await getVersion()
     const versionParts = version.split('.')
@@ -128,7 +130,12 @@ async function getVersionCode(): Promise<number> {
  * - 移动端：使用 UUID 并持久化存储（应用卸载后会重置）
  */
 async function getDeviceId(): Promise<string | undefined> {
+  if (!isTauriEnvironment()) {
+    return undefined
+  }
+  
   try {
+    const { invoke } = await import('@tauri-apps/api/core')
     const deviceId = await invoke<string>('get_device_id')
     return deviceId
   } catch (error) {
@@ -141,7 +148,16 @@ async function getDeviceId(): Promise<string | undefined> {
  * 获取设备信息
  */
 async function getDeviceInfo() {
+  if (!isTauriEnvironment()) {
+    return {
+      target: undefined,
+      arch: undefined,
+      devKey: undefined,
+    }
+  }
+  
   try {
+    const { arch, platform } = await import('@tauri-apps/plugin-os')
     const targetPlatform = await platform()
     const archInfo = await arch()
     const deviceId = await getDeviceId()
@@ -168,7 +184,13 @@ export async function reportEvent(
   eventType: EventType,
   eventData: EventData
 ): Promise<boolean> {
+  if (!isTauriEnvironment()) {
+    console.debug('Not in Tauri environment, event reporting skipped')
+    return false
+  }
+  
   try {
+    const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
     const timestamp = generateRFC3339Timestamp()
     const nonce = generateNonce()
     const url = '/v1/app/report'

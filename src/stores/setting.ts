@@ -1,11 +1,11 @@
 import { Store } from '@tauri-apps/plugin-store'
 import { create } from 'zustand'
-import { getVersion } from '@tauri-apps/api/app'
 import { AiConfig } from '@/app/core/setting/config'
 import { GitlabInstanceType } from '@/lib/sync/gitlab.types'
 import { GiteaInstanceType } from '@/lib/sync/gitea.types'
 import { noteGenDefaultModels, noteGenModelKeys } from '@/app/model-config'
 import { fetch } from '@tauri-apps/plugin-http'
+import { isTauriEnvironment, safeLoadStore } from '@/lib/tauri-utils'
 
 export enum GenTemplateRange {
   All = 'all',
@@ -225,7 +225,7 @@ export interface RecordToolbarItem {
 
 const useSettingStore = create<SettingState>((set, get) => ({
   initSettingData: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await get().setVersion()
     
     // 初始化默认的NoteGen模型配置
@@ -460,8 +460,19 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   version: '',
   setVersion: async () => {
-    const version = await getVersion()
-    set({ version })
+    if (!isTauriEnvironment()) {
+      set({ version: 'dev' })
+      return
+    }
+    
+    try {
+      const { getVersion } = await import('@tauri-apps/api/app')
+      const version = await getVersion()
+      set({ version })
+    } catch (error) {
+      console.error('Failed to get version:', error)
+      set({ version: 'unknown' })
+    }
   },
 
   autoUpdate: true,
@@ -481,56 +492,56 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   placeholderModel: '',
   setPlaceholderModel: async (placeholderModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('placeholderModel', placeholderModel)
     set({ placeholderModel })
   },
 
   translateModel: '',
   setTranslateModel: async (translateModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('translateModel', translateModel)
     set({ translateModel })
   },
 
   markDescModel: '',
   setMarkDescModel: async (markDescModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('markDescModel', markDescModel)
     set({ markDescModel })
   },
 
   embeddingModel: '',
   setEmbeddingModel: async (embeddingModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('embeddingModel', embeddingModel)
     set({ embeddingModel })
   },
 
   rerankingModel: '',
   setRerankingModel: async (rerankingModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('rerankingModel', rerankingModel)
     set({ rerankingModel })
   },
 
   imageMethodModel: '',
   setImageMethodModel: async (imageMethodModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('imageMethodModel', imageMethodModel)
     set({ imageMethodModel })
   },
 
   audioModel: '',
   setAudioModel: async (audioModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('audioModel', audioModel)
     set({ audioModel })
   },
 
   sttModel: '',
   setSttModel: async (sttModel) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('sttModel', sttModel)
     set({ sttModel })
   },
@@ -556,7 +567,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   ],
   setTemplateList: async (templateList) => {
     set({ templateList })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('templateList', templateList)
   },
 
@@ -575,13 +586,13 @@ const useSettingStore = create<SettingState>((set, get) => ({
   githubUsername: '',
   setGithubUsername: async (githubUsername) => {
     set({ githubUsername })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     store.set('githubUsername', githubUsername)
   },
 
   accessToken: '',
   setAccessToken: async (accessToken) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     const hasAccessToken = await store.get('accessToken') === accessToken
     if (!hasAccessToken) {
       await get().setGithubUsername('')
@@ -592,35 +603,35 @@ const useSettingStore = create<SettingState>((set, get) => ({
   jsdelivr: true,
   setJsdelivr: async (jsdelivr: boolean) => {
     set({ jsdelivr })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('jsdelivr', jsdelivr)
   },
 
   useImageRepo: false,
   setUseImageRepo: async (useImageRepo: boolean) => {
     set({ useImageRepo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('useImageRepo', useImageRepo)
   },
 
   autoSync: 'disabled',
   setAutoSync: async (autoSync: string) => {
     set({ autoSync })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('autoSync', autoSync)
   },
 
   lastSettingPage: 'ai',
   setLastSettingPage: async (page: string) => {
     set({ lastSettingPage: page })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('lastSettingPage', page)
   },
 
   workspacePath: '',
   setWorkspacePath: async (path: string) => {
     set({ workspacePath: path })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('workspacePath', path)
     
     // 如果路径不为空且不在历史记录中，则添加到历史记录
@@ -635,20 +646,20 @@ const useSettingStore = create<SettingState>((set, get) => ({
     const currentHistory = get().workspaceHistory
     const newHistory = [path, ...currentHistory.filter(p => p !== path)].slice(0, 10) // 最多保存10个历史路径
     set({ workspaceHistory: newHistory })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('workspaceHistory', newHistory)
     await store.save()
   },
   removeWorkspaceHistory: async (path: string) => {
     const newHistory = get().workspaceHistory.filter(p => p !== path)
     set({ workspaceHistory: newHistory })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('workspaceHistory', newHistory)
     await store.save()
   },
   clearWorkspaceHistory: async () => {
     set({ workspaceHistory: [] })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('workspaceHistory', [])
     await store.save()
   },
@@ -657,21 +668,21 @@ const useSettingStore = create<SettingState>((set, get) => ({
   giteeAccessToken: '',
   setGiteeAccessToken: async (giteeAccessToken: string) => {
     set({ giteeAccessToken })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('giteeAccessToken', giteeAccessToken)
   },
 
   giteeAutoSync: 'disabled',
   setGiteeAutoSync: async (giteeAutoSync: string) => {
     set({ giteeAutoSync })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('giteeAutoSync', giteeAutoSync)
   },
 
   // Gitlab 相关设置
   gitlabInstanceType: GitlabInstanceType.OFFICIAL,
   setGitlabInstanceType: async (instanceType: GitlabInstanceType) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('gitlabInstanceType', instanceType)
     await store.save()
     set({ gitlabInstanceType: instanceType })
@@ -679,7 +690,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   gitlabCustomUrl: '',
   setGitlabCustomUrl: async (customUrl: string) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('gitlabCustomUrl', customUrl)
     await store.save()
     set({ gitlabCustomUrl: customUrl })
@@ -692,7 +703,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   gitlabAutoSync: 'disabled',
   setGitlabAutoSync: async (gitlabAutoSync: string) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('gitlabAutoSync', gitlabAutoSync)
     await store.save()
     set({ gitlabAutoSync })
@@ -700,7 +711,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   gitlabUsername: '',
   setGitlabUsername: async (gitlabUsername: string) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('gitlabUsername', gitlabUsername)
     await store.save()
     set({ gitlabUsername })
@@ -709,7 +720,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   // Gitea 相关实现
   giteaInstanceType: GiteaInstanceType.OFFICIAL,
   setGiteaInstanceType: async (instanceType: GiteaInstanceType) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('giteaInstanceType', instanceType)
     await store.save()
     set({ giteaInstanceType: instanceType })
@@ -717,7 +728,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
 
   giteaCustomUrl: '',
   setGiteaCustomUrl: async (customUrl: string) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('giteaCustomUrl', customUrl)
     await store.save()
     set({ giteaCustomUrl: customUrl })
@@ -731,14 +742,14 @@ const useSettingStore = create<SettingState>((set, get) => ({
   giteaAutoSync: 'disabled',
   setGiteaAutoSync: async (giteaAutoSync: string) => {
     set({ giteaAutoSync })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('giteaAutoSync', giteaAutoSync)
     await store.save()
   },
 
   giteaUsername: '',
   setGiteaUsername: async (giteaUsername: string) => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('giteaUsername', giteaUsername)
     await store.save()
     set({ giteaUsername })
@@ -747,7 +758,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   giteaCustomSyncRepo: '',
   setGiteaCustomSyncRepo: async (repo: string) => {
     set({ giteaCustomSyncRepo: repo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('giteaCustomSyncRepo', repo)
     await store.save()
   },
@@ -755,7 +766,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   // 默认使用 GitHub 作为主要备份方式
   primaryBackupMethod: 'github',
   setPrimaryBackupMethod: async (method: 'github' | 'gitee' | 'gitlab' | 'gitea') => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('primaryBackupMethod', method)
     await store.save()
     set({ primaryBackupMethod: method })
@@ -764,7 +775,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   assetsPath: 'assets',
   setAssetsPath: async (path: string) => {
     set({ assetsPath: path })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('assetsPath', path)
     await store.save()
   },
@@ -773,7 +784,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   githubImageAccessToken: '',
   setGithubImageAccessToken: async (githubImageAccessToken: string) => {
     set({ githubImageAccessToken })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('githubImageAccessToken', githubImageAccessToken)
     await store.save()
   },
@@ -782,14 +793,14 @@ const useSettingStore = create<SettingState>((set, get) => ({
   enableImageRecognition: true,
   setEnableImageRecognition: async (enable: boolean) => {
     set({ enableImageRecognition: enable })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('enableImageRecognition', enable)
     await store.save()
   },
   primaryImageMethod: 'ocr',
   setPrimaryImageMethod: async (method: 'ocr' | 'vlm') => {
     set({ primaryImageMethod: method })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('primaryImageMethod', method)
     await store.save()
   },
@@ -798,7 +809,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   uiScale: 100,
   setUiScale: async (scale: number) => {
     set({ uiScale: scale })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('uiScale', scale)
     await store.save()
     
@@ -810,7 +821,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   contentTextScale: 100,
   setContentTextScale: async (scale: number) => {
     set({ contentTextScale: scale })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('contentTextScale', scale)
     await store.save()
   },
@@ -819,7 +830,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   customCss: '',
   setCustomCss: async (css: string) => {
     set({ customCss: css })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('customCss', css)
     await store.save()
     
@@ -837,7 +848,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   githubCustomSyncRepo: '',
   setGithubCustomSyncRepo: async (repo: string) => {
     set({ githubCustomSyncRepo: repo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('githubCustomSyncRepo', repo)
     await store.save()
   },
@@ -845,7 +856,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   giteeCustomSyncRepo: '',
   setGiteeCustomSyncRepo: async (repo: string) => {
     set({ giteeCustomSyncRepo: repo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('giteeCustomSyncRepo', repo)
     await store.save()
   },
@@ -853,7 +864,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   gitlabCustomSyncRepo: '',
   setGitlabCustomSyncRepo: async (repo: string) => {
     set({ gitlabCustomSyncRepo: repo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('gitlabCustomSyncRepo', repo)
     await store.save()
   },
@@ -861,7 +872,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   githubCustomImageRepo: '',
   setGithubCustomImageRepo: async (repo: string) => {
     set({ githubCustomImageRepo: repo })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('githubCustomImageRepo', repo)
     await store.save()
   },
@@ -885,7 +896,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   ],
   setChatToolbarConfigPc: async (config: ChatToolbarItem[]) => {
     set({ chatToolbarConfigPc: config })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('chatToolbarConfigPc', config)
     await store.save()
   },
@@ -906,7 +917,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   ],
   setChatToolbarConfigMobile: async (config: ChatToolbarItem[]) => {
     set({ chatToolbarConfigMobile: config })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('chatToolbarConfigMobile', config)
     await store.save()
   },
@@ -922,7 +933,7 @@ const useSettingStore = create<SettingState>((set, get) => ({
   ],
   setRecordToolbarConfig: async (config: RecordToolbarItem[]) => {
     set({ recordToolbarConfig: config })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('recordToolbarConfig', config)
     await store.save()
   },

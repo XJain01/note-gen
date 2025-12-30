@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { platform } from '@tauri-apps/plugin-os'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { isMobileDevice } from '@/lib/check'
+import { isTauriEnvironment } from '@/lib/tauri-utils'
 import { Search, Settings, Minus, Square, X, PanelLeft, PanelLeftClose, PanelRight, PanelRightClose, Cog } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -52,17 +52,26 @@ export function TitleBar({ onSearchClick }: TitleBarProps) {
     // 检查是否为移动设备
     setIsMobile(isMobileDevice())
     
-    try {
-      const p = platform()
-      if (p === 'macos') {
-        setCurrentPlatform('macos')
-      } else if (p === 'windows') {
-        setCurrentPlatform('windows')
-      } else if (p === 'linux') {
-        setCurrentPlatform('linux')
-      }
-    } catch (error) {
-      console.error('Error detecting platform:', error)
+    // 只在 Tauri 环境中检测平台
+    if (isTauriEnvironment()) {
+      (async () => {
+        try {
+          const { platform } = await import('@tauri-apps/plugin-os')
+          const p = platform()
+          if (p === 'macos') {
+            setCurrentPlatform('macos')
+          } else if (p === 'windows') {
+            setCurrentPlatform('windows')
+          } else if (p === 'linux') {
+            setCurrentPlatform('linux')
+          }
+        } catch (error) {
+          console.error('Error detecting platform:', error)
+        }
+      })()
+    } else {
+      // 网页调试模式下，设置默认平台为 windows
+      setCurrentPlatform('windows')
     }
   }, [])
 
@@ -100,14 +109,11 @@ export function TitleBar({ onSearchClick }: TitleBarProps) {
     return null
   }
 
-  // 平台未知时不显示
-  if (currentPlatform === 'unknown') {
-    return null
-  }
-
   // macOS: 红绿灯按钮在左侧，拖拽区域需要避开
   // Windows/Linux: 控制按钮在右侧，拖拽区域需要避开
   const isMacOS = currentPlatform === 'macos'
+  // 是否在 Tauri 环境中
+  const isTauri = isTauriEnvironment()
 
   return (
     <TooltipProvider>
@@ -230,7 +236,7 @@ export function TitleBar({ onSearchClick }: TitleBarProps) {
         </div>
 
         {/* Windows 控制按钮 */}
-        {!isMacOS && (
+        {!isMacOS && isTauri && (
           <div className="flex items-center shrink-0 relative z-10">
             <Button
               variant="ghost"

@@ -1,8 +1,8 @@
 import { GithubFile } from '@/lib/sync/github';
 import { getImageFiles } from '@/lib/imageHosting/github';
 import { GithubRepoInfo, OctokitResponse, SyncStateEnum, UserInfo } from '@/lib/sync/github.types';
-import { Store } from '@tauri-apps/plugin-store';
 import { create } from 'zustand'
+import { safeLoadStore } from '@/lib/tauri-utils'
 
 interface S3Config {
   accessKeyId: string
@@ -45,7 +45,9 @@ interface MarkState {
 
 const useImageStore = create<MarkState>((set, get) => ({
   initMainHosting: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
+    
     const mainImageHosting = await store.get<string>('mainImageHosting')
     if (mainImageHosting) {
       set({ mainImageHosting })
@@ -82,7 +84,8 @@ const useImageStore = create<MarkState>((set, get) => ({
   mainImageHosting: 'github',
   setMainImageHosting: async (mainImageHosting) => {
     set({ mainImageHosting })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
     await store.set('mainImageHosting', mainImageHosting)
     await store.save()
   },
@@ -91,7 +94,8 @@ const useImageStore = create<MarkState>((set, get) => ({
   setImageRepoUserInfo: async (imageRepoUserInfo) => {
     set({ imageRepoUserInfo })
     if (!imageRepoUserInfo) return
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
     await store.set('githubImageUsername', imageRepoUserInfo?.data?.login)
     await store.save()
   },
@@ -108,7 +112,8 @@ const useImageStore = create<MarkState>((set, get) => ({
   s3Config: undefined,
   setS3Config: async (config) => {
     set({ s3Config: config })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
     await store.set('s3Config', config)
     await store.save()
   },

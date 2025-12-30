@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 import { Clipboard, ClipboardX } from 'lucide-react'
 import { TooltipButton } from '@/components/tooltip-button'
 import { useState, useEffect } from 'react'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore, safeSetToStore } from '@/lib/tauri-utils'
 
 export function ClipboardMonitor() {
   const t = useTranslations('record.chat.input.clipboardMonitor')
@@ -12,16 +12,9 @@ export function ClipboardMonitor() {
   // Sync with store.json on mount
   useEffect(() => {
     const syncWithStore = async () => {
-      try {
-        const store = await Store.load('store.json')
-        const storedValue = await store.get<boolean>('clipboardMonitor')
-        
-        // Only update if the stored value exists and is different from the current state
-        if (storedValue !== undefined && storedValue !== isEnabled) {
-          setIsEnabled(storedValue)
-        }
-      } catch (error) {
-        console.error('Failed to load clipboard monitor state from store:', error)
+      const storedValue = await safeGetFromStore<boolean>('clipboardMonitor', true)
+      if (storedValue !== isEnabled) {
+        setIsEnabled(storedValue)
       }
     }
     
@@ -32,8 +25,7 @@ export function ClipboardMonitor() {
   const toggleClipboardMonitor = async () => {
     const newState = !isEnabled
     setIsEnabled(newState)
-    const store = await Store.load('store.json')
-    await store.set('clipboardMonitor', newState)
+    await safeSetToStore('clipboardMonitor', newState)
   }
 
   return (

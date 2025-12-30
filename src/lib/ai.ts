@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { AiConfig } from "@/app/core/setting/config";
 import { fetch } from "@tauri-apps/plugin-http";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { isTauriEnvironment } from './tauri-utils';
 
 /**
  * 获取当前的prompt内容
@@ -224,41 +225,50 @@ async function getEmbeddingModelInfo() {
  * 获取重排序模型信息
  */
 export async function getRerankModelInfo() {
-  const store = await Store.load('store.json');
-  const rerankModel = await store.get<string>('rerankingModel');
-  if (!rerankModel) return null;
-  
-  const aiModelList = await store.get<AiConfig[]>('aiModelList');
-  if (!aiModelList) return null;
-  
-  // 在新的数据结构中，需要找到包含指定模型ID的配置
-  for (const config of aiModelList) {
-    // 检查新的 models 数组结构
-    if (config.models && config.models.length > 0) {
-      const targetModel = config.models.find(model => 
-        model.id === rerankModel && model.modelType === 'rerank'
-      );
-      if (targetModel) {
-        // 返回合并了模型配置的 AiConfig
-        return {
-          ...config,
-          model: targetModel.model,
-          modelType: targetModel.modelType,
-          temperature: targetModel.temperature,
-          topP: targetModel.topP,
-          voice: targetModel.voice,
-          enableStream: targetModel.enableStream
-        };
-      }
-    } else {
-      // 向后兼容：处理旧的单模型结构
-      if (config.key === rerankModel && config.modelType === 'rerank') {
-        return config;
-      }
-    }
+  if (!isTauriEnvironment()) {
+    return null
   }
   
-  return null;
+  try {
+    const store = await Store.load('store.json');
+    const rerankModel = await store.get<string>('rerankingModel');
+    if (!rerankModel) return null;
+    
+    const aiModelList = await store.get<AiConfig[]>('aiModelList');
+    if (!aiModelList) return null;
+    
+    // 在新的数据结构中，需要找到包含指定模型ID的配置
+    for (const config of aiModelList) {
+      // 检查新的 models 数组结构
+      if (config.models && config.models.length > 0) {
+        const targetModel = config.models.find(model => 
+          model.id === rerankModel && model.modelType === 'rerank'
+        );
+        if (targetModel) {
+          // 返回合并了模型配置的 AiConfig
+          return {
+            ...config,
+            model: targetModel.model,
+            modelType: targetModel.modelType,
+            temperature: targetModel.temperature,
+            topP: targetModel.topP,
+            voice: targetModel.voice,
+            enableStream: targetModel.enableStream
+          };
+        }
+      } else {
+        // 向后兼容:处理旧的单模型结构
+        if (config.key === rerankModel && config.modelType === 'rerank') {
+          return config;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('获取重排序模型信息失败:', error)
+    return null
+  }
 }
 
 /**

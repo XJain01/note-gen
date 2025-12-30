@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { ModelConfig } from "../../setting/config"
-import { Store } from "@tauri-apps/plugin-store"
+import { safeSetToStore } from "@/lib/tauri-utils"
 import useSettingStore from "@/stores/setting"
 import { BotMessageSquare, BotOff } from "lucide-react"
 import {
@@ -38,9 +38,7 @@ export function ModelSelect() {
 
   async function modelSelectChangeHandler(modelId: string) {
     setPrimaryModel(modelId)
-    const store = await Store.load('store.json');
-    store.set('primaryModel', modelId)
-    await store.save()
+    await safeSetToStore('primaryModel', modelId)
   }
 
   function handleSetOpen(isOpen: boolean) {

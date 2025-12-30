@@ -1,9 +1,16 @@
-import { invoke } from '@tauri-apps/api/core';
+import { isTauriEnvironment } from '@/lib/tauri-utils';
 import { ClientOptions } from '@tauri-apps/plugin-http';
 
 const ERROR_REQUEST_CANCELLED = 'Request canceled';
 
 async function fetch(input: string, init?: RequestInit & ClientOptions) {
+  // 如果不在 Tauri 环境中，抛出错误
+  if (!isTauriEnvironment()) {
+    throw new Error('This fetch implementation is only available in Tauri environment. Use native fetch instead.');
+  }
+  
+  const { invoke } = await import('@tauri-apps/api/core');
+  
   // abort early here if needed
   const signal = init?.signal;
   if (signal?.aborted) {

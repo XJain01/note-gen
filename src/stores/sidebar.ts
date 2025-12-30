@@ -1,4 +1,4 @@
-import { Store } from '@tauri-apps/plugin-store'
+import { safeLoadStore, safeGetFromStore, safeSetToStore } from '@/lib/tauri-utils'
 import { create } from 'zustand'
 
 export interface SidebarState {
@@ -35,61 +35,48 @@ const initialState = getInitialState()
 export const useSidebarStore = create<SidebarState>((set, get) => ({
   fileSidebarVisible: true,
   toggleFileSidebar: async () => {
-    set((state) => ({
-      fileSidebarVisible: !state.fileSidebarVisible
-    }))
-    const store = await Store.load('store.json')
-    store.set('fileSidebarVisible', !store.get('fileSidebarVisible'))
+    const newState = !get().fileSidebarVisible
+    set({ fileSidebarVisible: newState })
+    await safeSetToStore('fileSidebarVisible', newState)
   },
   showFileSidebar: async () => {
     set({ fileSidebarVisible: true })
-    const store = await Store.load('store.json')
-    store.set('fileSidebarVisible', true)
+    await safeSetToStore('fileSidebarVisible', true)
   },
   noteSidebarVisible: true,
   toggleNoteSidebar: async () => {
-    set((state) => ({
-      noteSidebarVisible: !state.noteSidebarVisible
-    }))
-    const store = await Store.load('store.json')
-    store.set('noteSidebarVisible', !store.get('noteSidebarVisible'))
+    const newState = !get().noteSidebarVisible
+    set({ noteSidebarVisible: newState })
+    await safeSetToStore('noteSidebarVisible', newState)
   },
   showNoteSidebar: async () => {
     set({ noteSidebarVisible: true })
-    const store = await Store.load('store.json')
-    store.set('noteSidebarVisible', true)
+    await safeSetToStore('noteSidebarVisible', true)
   },
   leftSidebarVisible: initialState.left,
   toggleLeftSidebar: async () => {
     const newState = !get().leftSidebarVisible
     set({ leftSidebarVisible: newState })
     localStorage.setItem('leftSidebarVisible', String(newState))
-    const store = await Store.load('store.json')
-    await store.set('leftSidebarVisible', newState)
-    await store.save()
+    await safeSetToStore('leftSidebarVisible', newState)
   },
   rightSidebarVisible: initialState.right,
   toggleRightSidebar: async () => {
     const newState = !get().rightSidebarVisible
     set({ rightSidebarVisible: newState })
     localStorage.setItem('rightSidebarVisible', String(newState))
-    const store = await Store.load('store.json')
-    await store.set('rightSidebarVisible', newState)
-    await store.save()
+    await safeSetToStore('rightSidebarVisible', newState)
   },
   leftSidebarTab: 'files',
   setLeftSidebarTab: async (tab: 'files' | 'notes') => {
     set({ leftSidebarTab: tab })
     localStorage.setItem('leftSidebarTab', tab)
-    const store = await Store.load('store.json')
-    await store.set('leftSidebarTab', tab)
-    await store.save()
+    await safeSetToStore('leftSidebarTab', tab)
   },
   initSidebarState: async () => {
-    const store = await Store.load('store.json')
-    const leftState = await store.get<boolean>('leftSidebarVisible')
-    const rightState = await store.get<boolean>('rightSidebarVisible')
-    const leftTab = await store.get<'files' | 'notes'>('leftSidebarTab')
+    const leftState = await safeGetFromStore<boolean | null>('leftSidebarVisible', null)
+    const rightState = await safeGetFromStore<boolean | null>('rightSidebarVisible', null)
+    const leftTab = await safeGetFromStore<'files' | 'notes' | null>('leftSidebarTab', null)
     
     if (leftState !== null && leftState !== undefined) {
       set({ leftSidebarVisible: leftState })

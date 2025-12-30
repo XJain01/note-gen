@@ -4,7 +4,7 @@ import { uploadFile as uploadGiteeFile, getFiles as giteeGetFiles } from '@/lib/
 import { uploadFile as uploadGitlabFile, getFiles as gitlabGetFiles, getFileContent as gitlabGetFileContent } from '@/lib/sync/gitlab'
 import { uploadFile as uploadGiteaFile, getFiles as giteaGetFiles, getFileContent as giteaGetFileContent } from '@/lib/sync/gitea'
 import { getSyncRepoName } from '@/lib/sync/repo-utils'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore, safeSetToStore } from '@/lib/tauri-utils'
 import { create } from 'zustand'
 
 interface TagState {
@@ -34,12 +34,10 @@ const useTagStore = create<TagState>((set, get) => ({
   currentTagId: 1,
   setCurrentTagId: async(currentTagId: number) => {
     set({ currentTagId })
-    const store = await Store.load('store.json');
-    await store.set('currentTagId', currentTagId)
+    await safeSetToStore('currentTagId', currentTagId)
   },
   initTags: async () => {
-    const store = await Store.load('store.json');
-    const currentTagId = await store.get<number>('currentTagId')
+    const currentTagId = await safeGetFromStore<number>('currentTagId', 1)
     if (currentTagId) set({ currentTagId })
     get().getCurrentTag()
   },
@@ -81,11 +79,10 @@ const useTagStore = create<TagState>((set, get) => ({
     const path = '.data'
     const filename = 'tags.json'
     const tags = await getTags()
-    const store = await Store.load('store.json');
     const jsonToBase64 = (data: Tag[]) => {
       return Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
     }
-    const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+    const primaryBackupMethod = await safeGetFromStore<string>('primaryBackupMethod', 'github');
     let result = false
     let res;
     let files: any;
@@ -154,8 +151,7 @@ const useTagStore = create<TagState>((set, get) => ({
   downloadTags: async () => {
     const path = '.data'
     const filename = 'tags.json'
-    const store = await Store.load('store.json');
-    const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
+    const primaryBackupMethod = await safeGetFromStore<string>('primaryBackupMethod', 'github');
     let result = []
     let files;
     switch (primaryBackupMethod) {

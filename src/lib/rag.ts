@@ -6,7 +6,7 @@ import {
   getSimilarDocuments,
   initVectorDb
 } from "@/db/vector";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke } from "./tauri-utils";
 
 // 重新导出initVectorDb，使其可在其他模块中导入
 export { initVectorDb };
@@ -404,14 +404,14 @@ export async function getContextForQuery(keywords: Keyword[]): Promise<{ context
         // 为每个关键词单独进行搜索
         for (const keyword of sortedKeywords) {
           // 对每个关键词调用Rust的fuzzy_search函数
-          const fuzzyResults: FuzzySearchResult[] = await invoke('fuzzy_search', {
+          const fuzzyResults: FuzzySearchResult[] = await safeInvoke('fuzzy_search', {
             items,
             query: keyword.text,  // 单独使用每个关键词
             keys: ['title', 'article'],
             threshold: 0.3, // 模糊搜索阈值
             includeScore: true,
             includeMatches: true
-          });
+          }, []);
           
           // 处理模糊搜索结果
           for (const result of fuzzyResults) {

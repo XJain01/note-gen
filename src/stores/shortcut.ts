@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { Store } from "@tauri-apps/plugin-store";
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 import emitter from '@/lib/emitter';
+import { safeLoadStore, isTauriEnvironment } from '@/lib/tauri-utils';
 
 interface Shortcut {
   key: string,
@@ -27,6 +27,8 @@ const defaultShortcuts: Shortcut[] = [
 ]
 
 async function bindShortcut(shortcut: Shortcut) {
+  if (!isTauriEnvironment()) return;
+  
   await unregisterAll()
   try {
     if (shortcut.value) {
@@ -45,7 +47,9 @@ const useShortcutStore = create<SettingState>((set, get) => ({
   shortcuts: [],
 
   initShortcut: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
+    
     const shortcuts = await store.get<Shortcut[]>('shortcuts')
     if (shortcuts && shortcuts.length) {
       const mergeShortcuts = defaultShortcuts.map((shortcut) => {
@@ -70,7 +74,9 @@ const useShortcutStore = create<SettingState>((set, get) => ({
   },
 
   setShortcut: async (key: string, value: string) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
+    
     const newShortcuts = get().shortcuts.map((shortcut) => {
       if (shortcut.key === key) {
         return { ...shortcut, value }
@@ -85,7 +91,9 @@ const useShortcutStore = create<SettingState>((set, get) => ({
   },
 
   resetDefault: async (key: string) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
+    
     const newShortcuts = get().shortcuts.map((shortcut) => {
       if (shortcut.key === key) {
         return { ...shortcut, value: defaultShortcuts.find((shortcut) => shortcut.key === key)?.value || '' }

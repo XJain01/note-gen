@@ -7,7 +7,7 @@ import { fetchAiStream } from "@/lib/ai"
 import { TooltipButton } from "@/components/tooltip-button"
 import { useImperativeHandle, forwardRef, useRef } from "react"
 import { useTranslations } from "next-intl"
-import { Store } from "@tauri-apps/plugin-store"
+import { safeGetFromStore } from "@/lib/tauri-utils"
 
 interface TranslateSendProps {
   inputValue: string;
@@ -51,8 +51,7 @@ export const TranslateSend = forwardRef<{ sendTranslate: () => void }, Translate
     if (!message) return
 
     // 获取目标语言
-    const store = await Store.load('store.json')
-    const targetLanguage = await store.get<string>('chatLanguage') || '中文'
+    const targetLanguage = await safeGetFromStore<string>('chatLanguage', '中文')
 
     // 翻译请求内容
     const request_content = `Please translate the following text to ${targetLanguage}. Only return the translated text, no explanations or additional content:\n\n${inputValue.trim()}`

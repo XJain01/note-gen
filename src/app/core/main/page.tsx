@@ -7,7 +7,7 @@ import Chat from '../record/chat'
 import dynamic from 'next/dynamic'
 import { useSidebarStore } from "@/stores/sidebar"
 import { useEffect, useRef, useState } from 'react'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeSetToStore } from '@/lib/tauri-utils'
 import { ImperativePanelHandle } from 'react-resizable-panels'
 
 function getDefaultLayout() {
@@ -115,9 +115,7 @@ function Page() {
   useEffect(() => {
     // 保存当前页面路径
     async function saveCurrentPage() {
-      const store = await Store.load('store.json')
-      await store.set('currentPage', '/core/main')
-      await store.save()
+      await safeSetToStore('currentPage', '/core/main')
     }
     saveCurrentPage()
   }, [])

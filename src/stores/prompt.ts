@@ -1,5 +1,5 @@
-import { Store } from '@tauri-apps/plugin-store'
 import { create } from 'zustand'
+import { safeLoadStore } from '@/lib/tauri-utils'
 
 export interface Prompt {
   id: string
@@ -32,7 +32,9 @@ const usePromptStore = create<PromptState>((set, get) => ({
   currentPrompt: null,
   
   initPromptData: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
+    
     const promptList = await store.get<Prompt[]>('promptList');
     if (promptList) {
       set({ promptList });
@@ -59,7 +61,8 @@ const usePromptStore = create<PromptState>((set, get) => ({
   
   setPromptList: async (promptList) => {
     set({ promptList });
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json');
+    if (!store) return;
     await store.set('promptList', promptList);
   },
   
@@ -108,7 +111,8 @@ const usePromptStore = create<PromptState>((set, get) => ({
   setCurrentPrompt: async (prompt) => {
     set({ currentPrompt: prompt });
     if (prompt) {
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json');
+      if (!store) return;
       await store.set('currentPromptId', prompt.id);
     }
   }

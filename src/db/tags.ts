@@ -1,5 +1,5 @@
 import { getDb } from "./index"
-import { Store } from '@tauri-apps/plugin-store';
+import { safeLoadStore, isTauriEnvironment } from '@/lib/tauri-utils';
 
 export interface Tag {
   id: number
@@ -12,6 +12,11 @@ export interface Tag {
 
 // 创建 tags 表
 export async function initTagsDb() {
+  if (!isTauriEnvironment()) {
+    console.warn('Skipping tags database initialization: not in Tauri environment');
+    return;
+  }
+  
   const db = await getDb()
   await db.execute(`
     create table if not exists tags (
@@ -45,9 +50,11 @@ export async function initTagsDb() {
       ['Idea', true, true]
     )
     const tag = (await db.select<Tag[]>("select * from tags where name = $1", ['Idea']))[0]
-    const store = await Store.load('store.json');
-    await store.set('currentTagId', tag.id)
-    await store.save()
+    const store = await safeLoadStore('store.json');
+    if (store) {
+      await store.set('currentTagId', tag.id)
+      await store.save()
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { safeInvoke, isTauriEnvironment } from '@/lib/tauri-utils'
 import type {
   MCPServerConfig,
   JSONRPCRequest,
@@ -37,7 +37,12 @@ export class MCPClient {
    * 连接 stdio 服务器
    */
   private async connectStdio(): Promise<void> {
+    if (!isTauriEnvironment()) {
+      throw new Error('MCP client is only available in Tauri environment')
+    }
+    
     try {
+      const { invoke } = await import('@tauri-apps/api/core')
       await invoke('start_mcp_stdio_server', {
         serverId: this.config.id,
         command: this.config.command,
@@ -148,7 +153,12 @@ export class MCPClient {
    */
   async disconnect(): Promise<void> {
     if (this.config.type === 'stdio') {
+      if (!isTauriEnvironment()) {
+        return
+      }
+      
       try {
+        const { invoke } = await import('@tauri-apps/api/core')
         await invoke('stop_mcp_server', { serverId: this.config.id })
       } catch {
         // 静默处理错误
@@ -179,7 +189,12 @@ export class MCPClient {
    * 发送 stdio 请求
    */
   private async sendStdioRequest(request: JSONRPCRequest): Promise<any> {
+    if (!isTauriEnvironment()) {
+      throw new Error('Stdio requests are only available in Tauri environment')
+    }
+    
     try {
+      const { invoke } = await import('@tauri-apps/api/core')
       const responseStr = await invoke<string>('send_mcp_message', {
         serverId: this.config.id,
         message: JSON.stringify(request),

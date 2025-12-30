@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/tabs"
 import { useState, useImperativeHandle, forwardRef, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Store } from "@tauri-apps/plugin-store"
+import { safeGetFromStore } from "@/lib/tauri-utils"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs"
@@ -49,8 +49,7 @@ export const MarkGen = forwardRef<{ openGen: () => void }, MarkGenProps>(({ inpu
   const t = useTranslations('record.chat.note')
 
   async function initGenTemplates() {
-    const store = await Store.load('store.json')
-    const template = await store.get<GenTemplate[]>('templateList') || []
+    const template = await safeGetFromStore<GenTemplate[]>('templateList', [])
     setGenTemplate(template)
   }
 

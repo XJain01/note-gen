@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
-import { Store } from "@tauri-apps/plugin-store"
+import { safeGetFromStore, safeSetToStore } from "@/lib/tauri-utils"
 import { Globe } from "lucide-react"
 import {
   Popover,
@@ -46,35 +46,22 @@ export function ChatLanguage() {
   }
 
   async function initChatLanguage() {
-    try {
-      const store = await Store.load('store.json')
-      const savedLanguage = await store.get<string>('chatLanguage')
-      if (savedLanguage) {
-        setChatLanguage(savedLanguage)
-        setLocale(savedLanguage)
-      } else {
-        const appLocale = await store.get<string>('locale') || '中文'
-        setChatLanguage(appLocale)
-        setLocale(appLocale)
-        await store.set('chatLanguage', appLocale)
-        await store.save()
-      }
-    } catch (error) {
-      console.error('Failed to initialize chat language:', error)
-      setChatLanguage('en') // Default fallback
+    const savedLanguage = await safeGetFromStore<string>('chatLanguage', '')
+    if (savedLanguage) {
+      setChatLanguage(savedLanguage)
+      setLocale(savedLanguage)
+    } else {
+      const appLocale = await safeGetFromStore<string>('locale', '中文')
+      setChatLanguage(appLocale)
+      setLocale(appLocale)
+      await safeSetToStore('chatLanguage', appLocale)
     }
   }
 
   // Save language selection to local storage
   async function languageSelectChangeHandler(langId: string) {
     setChatLanguage(langId)
-    try {
-      const store = await Store.load('store.json')
-      await store.set('chatLanguage', langId)
-      await store.save()
-    } catch (error) {
-      console.error('Failed to save chat language:', error)
-    }
+    await safeSetToStore('chatLanguage', langId)
     setLocale(langId)
   }
 

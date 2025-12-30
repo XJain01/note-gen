@@ -8,7 +8,7 @@ import CustomToolbar from './custom-toolbar'
 import './style.scss'
 import { useTheme } from 'next-themes'
 import { toast } from '@/hooks/use-toast'
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore } from '@/lib/tauri-utils'
 import { useTranslations } from 'next-intl'
 import { useI18n } from '@/hooks/useI18n'
 import emitter from '@/lib/emitter'
@@ -56,11 +56,10 @@ export function MdEditor() {
   }
 
   async function init() {
-    const store = await Store.load('store.json');
-    const typewriterMode = await store.get<boolean>('typewriterMode') || false
-    const outlinePosition = await store.get<'left' | 'right'>('outlinePosition') || 'left'
-    const enableOutline = await store.get<boolean>('enableOutline') || false
-    const enableLineNumber = await store.get<boolean>('enableLineNumber') || false
+    const typewriterMode = await safeGetFromStore<boolean>('typewriterMode', false)
+    const outlinePosition = await safeGetFromStore<'left' | 'right'>('outlinePosition', 'left')
+    const enableOutline = await safeGetFromStore<boolean>('enableOutline', false)
+    const enableLineNumber = await safeGetFromStore<boolean>('enableLineNumber', false)
     const editorElement = document.getElementById('aritcle-md-editor')
     const currentWidth = editorElement?.clientWidth || 0
     const toolbarConfig = createToolbarConfig(t, currentWidth)
@@ -152,8 +151,7 @@ export function MdEditor() {
       mode: localMode,
       upload: {
         async handler(files: File[]) {
-          const store = await Store.load('store.json');
-          const useImageRepo = await store.get('useImageRepo')
+          const useImageRepo = await safeGetFromStore<boolean>('useImageRepo', false)
           if (useImageRepo) {
             const filesUrls = await uploadImages(files)
             if (vditor && typeof vditor.insertValue === 'function') {
@@ -167,7 +165,7 @@ export function MdEditor() {
             const workspace = await getWorkspacePath()
             
             // 从持久化存储获取最新的 assetsPath 设置
-            const currentAssetsPath = await store.get<string>('assetsPath') || assetsPath || 'assets'
+            const currentAssetsPath = await safeGetFromStore<string>('assetsPath', assetsPath || 'assets')
             
             // 使用 ref 中的最新 activeFilePath
             const currentActiveFilePath = activeFilePathRef.current
@@ -274,8 +272,7 @@ export function MdEditor() {
 
   // 设置编辑器 padding
   async function setEditorPadding(vditor: Vditor) {
-    const store = await Store.load('store.json');
-    const pageView = await store.get<'immersiveView' | 'panoramaView'>('pageView') || 'immersiveView'
+    const pageView = await safeGetFromStore<'immersiveView' | 'panoramaView'>('pageView', 'immersiveView')
     const resetDom = vditor.vditor.element.querySelectorAll('.vditor-reset')
     if (resetDom && pageView === "panoramaView") {
       resetDom.forEach(dom => {
@@ -625,7 +622,7 @@ export function MdEditor() {
         }
 
         // 防抖：等待拖拽结束后再更新
-        resizeTimer = setTimeout(() => {
+        resizeTimer = setTimeout(async () => {
           const currentLevel = getToolbarLevel(width)
           
           // 只在跨越阈值时才更新工具栏
@@ -635,19 +632,17 @@ export function MdEditor() {
             const newToolbarConfig = createToolbarConfig(t, width)
             const toolbarElement = editor.vditor.toolbar?.element
             if (toolbarElement) {
-              const store = Store.load('store.json')
-              store.then(async (s) => {
-                const typewriterMode = await s.get<boolean>('typewriterMode') || false
-                const outlinePosition = await s.get<'left' | 'right'>('outlinePosition') || 'left'
-                const enableOutline = await s.get<boolean>('enableOutline') || false
-                const enableLineNumber = await s.get<boolean>('enableLineNumber') || false
+              const typewriterMode = await safeGetFromStore<boolean>('typewriterMode', false)
+              const outlinePosition = await safeGetFromStore<'left' | 'right'>('outlinePosition', 'left')
+              const enableOutline = await safeGetFromStore<boolean>('enableOutline', false)
+              const enableLineNumber = await safeGetFromStore<boolean>('enableLineNumber', false)
+              
+              const currentContent = editor.getValue()
+              const currentMode = editor.vditor.currentMode
+              
+              editor.destroy()
                 
-                const currentContent = editor.getValue()
-                const currentMode = editor.vditor.currentMode
-                
-                editor.destroy()
-                
-                const vditor = new Vditor('aritcle-md-editor', {
+              const vditor = new Vditor('aritcle-md-editor', {
                   lang: getLang(),
                   height: '100%',
                   icon: 'material',
@@ -677,9 +672,8 @@ export function MdEditor() {
                     handleLocalImage(vditor)
                   },
                 })
-              })
+              }
             }
-          }
           
           lastToolbarLevel = currentLevel
         }, 300) // 300ms 防抖延迟

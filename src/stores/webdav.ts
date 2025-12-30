@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import { Store } from '@tauri-apps/plugin-store'
-import { invoke } from '@tauri-apps/api/core'
+import { safeLoadStore, safeInvoke } from '@/lib/tauri-utils'
 
 export enum WebDAVConnectionState {
   checking = 'checking',
@@ -73,12 +72,12 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
     set({ connectionState: WebDAVConnectionState.checking })
     
     try {
-      const result = await invoke<boolean>('webdav_test', {
+      const result = await safeInvoke<boolean>('webdav_test', {
         url,
         username,
         password,
         path
-      })
+      }, false)
       
       set({
         connectionState: result ? WebDAVConnectionState.success : WebDAVConnectionState.fail
@@ -109,8 +108,10 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
     setUrl: async (url: string) => {
       set({ url })
       try {
-        const store = await Store.load('store.json')
-        await store.set('webdavUrl', url)
+        const store = await safeLoadStore('store.json')
+        if (store) {
+          await store.set('webdavUrl', url)
+        }
       } catch (error) {
         console.error('Failed to save URL:', error)
       }
@@ -121,8 +122,10 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
     setUsername: async (username: string) => {
       set({ username })
       try {
-        const store = await Store.load('store.json')
-        await store.set('webdavUsername', username)
+        const store = await safeLoadStore('store.json')
+        if (store) {
+          await store.set('webdavUsername', username)
+        }
       } catch (error) {
         console.error('Failed to save username:', error)
       }
@@ -133,8 +136,10 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
     setPassword: async (password: string) => {
       set({ password })
       try {
-        const store = await Store.load('store.json')
-        await store.set('webdavPassword', password)
+        const store = await safeLoadStore('store.json')
+        if (store) {
+          await store.set('webdavPassword', password)
+        }
       } catch (error) {
         console.error('Failed to save password:', error)
       }
@@ -145,8 +150,10 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
     setPath: async (path: string) => {
       set({ path })
       try {
-        const store = await Store.load('store.json')
-        await store.set('webdavPath', path)
+        const store = await safeLoadStore('store.json')
+        if (store) {
+          await store.set('webdavPath', path)
+        }
       } catch (error) {
         console.error('Failed to save path:', error)
       }
@@ -164,7 +171,9 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
 
   initWebDAVData: async () => {
       try {
-    const store = await Store.load('store.json')
+        const store = await safeLoadStore('store.json')
+        if (!store) return
+        
         const url = await store.get<string>('webdavUrl') || ''
         const username = await store.get<string>('webdavUsername') || ''
         const password = await store.get<string>('webdavPassword') || ''
@@ -200,7 +209,7 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
       set({ backupState: true })
 
     try {
-        return await invoke<string>('webdav_backup', {
+        return await safeInvoke<string>('webdav_backup', {
           url, username, password, path
       })
     } finally {
@@ -218,7 +227,7 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
       set({ syncState: true })
 
     try {
-        return await invoke<string>('webdav_sync', {
+        return await safeInvoke<string>('webdav_sync', {
           url, username, password, path
       })
     } finally {
@@ -234,7 +243,7 @@ const useWebDAVStore = create<WebDAVState>((set, get) => {
         throw new Error('WebDAV connection parameters are incomplete')
       }
 
-      await invoke('webdav_create_dir', {
+      await safeInvoke('webdav_create_dir', {
         url, username, password, path: dirPath
       })
     }

@@ -19,7 +19,7 @@ import { initMcp } from "@/lib/mcp/init"
 import { SearchDialog } from "@/components/search-dialog"
 import { reportAppStart } from "@/lib/event-report"
 import { TitleBar } from "@/components/title-bar"
-import { Store } from '@tauri-apps/plugin-store'
+import { safeSetToStore } from "@/lib/tauri-utils"
 
 export default function RootLayout({
   children,
@@ -40,9 +40,7 @@ export default function RootLayout({
   useEffect(() => {
     async function redirectOldPaths() {
       if (pathname === '/core/article' || pathname === '/core/record') {
-        const store = await Store.load('store.json')
-        await store.set('currentPage', '/core/main')
-        await store.save()
+        await safeSetToStore('currentPage', '/core/main')
         router.replace('/core/main')
       }
     }

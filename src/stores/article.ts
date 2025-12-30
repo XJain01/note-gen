@@ -8,10 +8,10 @@ import { getCurrentFolder } from '@/lib/path'
 import useVectorStore from './vector'
 import { join, appDataDir } from '@tauri-apps/api/path'
 import { BaseDirectory, DirEntry, exists, mkdir, readDir, readTextFile, writeTextFile, stat } from '@tauri-apps/plugin-fs'
-import { Store } from '@tauri-apps/plugin-store'
 import { cloneDeep, uniq } from 'lodash-es'
 import { create } from 'zustand'
 import { getFilePathOptions, getWorkspacePath, toWorkspaceRelativePath } from '@/lib/workspace'
+import { safeLoadStore, isTauriEnvironment } from '@/lib/tauri-utils'
 
 export type SortType = 'name' | 'created' | 'modified' | 'none'
 export type SortDirection = 'asc' | 'desc'
@@ -104,7 +104,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   sortDirection: 'asc',
   setSortType: async (sortType: SortType) => {
     set({ sortType })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('sortType', sortType)
     
     // 如果需要按时间排序，先加载统计信息
@@ -118,7 +118,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   },
   setSortDirection: async (direction: SortDirection) => {
     set({ sortDirection: direction })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('sortDirection', direction)
     
     // 如果当前是按时间排序，确保统计信息已加载
@@ -187,7 +187,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   activeFilePath: '',
   setActiveFilePath: async (path: string) => {
     set({ activeFilePath: path })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('activeFilePath', path)
   },
 
@@ -198,13 +198,13 @@ const useArticleStore = create<NoteState>((set, get) => ({
 
   html2md: false,
   initHtml2md: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     const res = await store.get<boolean>('html2md')
     set({ html2md: res || false })
   },
   setHtml2md: async (html2md: boolean) => {
     set({ html2md })
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     store.set('html2md', html2md)
   },
 
@@ -272,6 +272,12 @@ const useArticleStore = create<NoteState>((set, get) => ({
   },
   
   loadFileTree: async () => {
+    // 如果不在 Tauri 环境中，跳过加载
+    if (!isTauriEnvironment()) {
+      set({ fileTreeLoading: false })
+      return
+    }
+    
     set({ fileTreeLoading: true })
     set({ fileTree: [] })
     
@@ -418,7 +424,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
     set({ remoteSyncLoading: true })
     
     try {
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json'); if (!store) return;
       const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
       
       // 检查是否配置了访问令牌
@@ -582,7 +588,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
     }
     
     // 检查是否配置了云同步
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
     let hasCloudSync = false
     
@@ -672,7 +678,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   
   // 加载特定文件夹的远程同步文件（后台任务）
   loadFolderRemoteFiles: async (fullpath: string) => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
     
     // 检查是否配置了访问令牌
@@ -918,7 +924,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
 
   collapsibleList: [],
   initCollapsibleList: async () => {
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     const res = await store.get<string[]>('collapsibleList')
     const activeFilePath = await store.get<string>('activeFilePath')
     if (activeFilePath) {
@@ -938,7 +944,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
         collapsibleList.splice(index, 1)
       }
     }
-    const store = await Store.load('store.json');
+    const store = await safeLoadStore('store.json'); if (!store) return;
     await store.set('collapsibleList', collapsibleList)
     set({ collapsibleList: uniq(collapsibleList).filter(item => !item.includes('.md')) })
   },
@@ -960,7 +966,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
     }
     
     const folderPaths = getAllFolderPaths(get().fileTree)
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('collapsibleList', folderPaths)
     set({ collapsibleList: uniq(folderPaths) })
     
@@ -971,7 +977,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   },
   
   collapseAllFolders: async () => {
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('collapsibleList', [])
     set({ collapsibleList: [] })
   },
@@ -986,7 +992,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
   },
   clearCollapsibleList: async () => {
     set({ collapsibleList: [] })
-    const store = await Store.load('store.json')
+    const store = await safeLoadStore('store.json'); if (!store) return
     await store.set('collapsibleList', [])
   },
 
@@ -1008,7 +1014,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
       } catch (_) {
         try {
           // 如果本地文件不存在，尝试从Github/Gitee读取
-          const store = await Store.load('store.json');
+          const store = await safeLoadStore('store.json'); if (!store) return;
           const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
           let content = '';
           switch (primaryBackupMethod) {
@@ -1034,7 +1040,7 @@ const useArticleStore = create<NoteState>((set, get) => ({
         }
       }
     } else {
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json'); if (!store) return;
       const primaryBackupMethod = await store.get<string>('primaryBackupMethod') || 'github';
       
       let res;

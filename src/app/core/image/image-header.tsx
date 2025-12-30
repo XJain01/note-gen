@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from "react"
-import { Store } from '@tauri-apps/plugin-store'
+import { safeGetFromStore } from '@/lib/tauri-utils'
 
 export function ImageHeader() {
   const t = useTranslations('image')
@@ -26,8 +26,7 @@ export function ImageHeader() {
   const checkSetting = useMemo(() => githubImageUsername && githubImageUsername.length > 0, [githubImageUsername])
 
   async function init() {
-    const store = await Store.load('store.json');
-    const githubImageUsername = await store.get<string>('githubImageUsername')
+    const githubImageUsername = await safeGetFromStore<string>('githubImageUsername', '')
     if (githubImageUsername) {
       setGithubImageUsername(githubImageUsername)
     }
