@@ -27,7 +27,6 @@ import { createToolbarConfig } from './toolbar.config'
 import { delMark } from '@/db/marks'
 import useMarkStore from '@/stores/mark'
 import { NotesToolbar } from '@/components/notes-toolbar'
-import { SearchDialog } from '@/components/search-dialog'
 
 export function MdEditor() {
   const [editor, setEditor] = useState<Vditor>();
@@ -37,7 +36,6 @@ export function MdEditor() {
   const [floatBarPosition, setFloatBarPosition] = useState<{left: number, top: number} | null>(null)
   const [selectedText, setSelectedText] = useState<string>('')
   const [editorWidth, setEditorWidth] = useState<number>(0)
-  const [searchOpen, setSearchOpen] = useState(false)
   const { theme } = useTheme()
   const t = useTranslations('article.editor')
   const { currentLocale } = useI18n()
@@ -822,21 +820,6 @@ export function MdEditor() {
     }
   }, [editor])
 
-  // 添加搜索快捷键 Cmd/Ctrl+F
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        setSearchOpen(true)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [])
-
 
   return (
     <>
@@ -844,7 +827,7 @@ export function MdEditor() {
         id="article-editor" 
         className={`flex-1 relative w-full h-full flex flex-col overflow-hidden dark:bg-zinc-950 transition-all ${isDraggingOver ? 'bg-accent/20' : ''}`}
       >
-        <NotesToolbar onSearchClick={() => setSearchOpen(true)} />
+        <NotesToolbar />
         <CustomToolbar editor={editor} />
         <div 
           id="aritcle-md-editor" 
@@ -854,7 +837,6 @@ export function MdEditor() {
         <CustomFooter editor={editor} />
         <FloatBar left={floatBarPosition?.left} top={floatBarPosition?.top} value={selectedText} editor={editor} />
       </div>
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
 }

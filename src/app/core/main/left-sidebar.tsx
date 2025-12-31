@@ -1,17 +1,21 @@
 'use client'
 
+import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Files, Highlighter } from "lucide-react"
+import { Files, Highlighter, Search } from "lucide-react"
 import { FileSidebar } from "../article/file"
 import { NoteSidebar } from "../record/mark"
 import { FileActions } from "../article/file/file-actions"
 import { MarkActions } from "../record/mark/mark-actions"
 import { useTranslations } from "next-intl"
 import { useSidebarStore } from "@/stores/sidebar"
+import { Button } from "@/components/ui/button"
+import { SearchDialog } from "@/components/search-dialog"
 
 export function LeftSidebar() {
   const { leftSidebarTab, setLeftSidebarTab } = useSidebarStore()
   const t = useTranslations()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const handleTabChange = (value: string) => {
     if (value === 'files' || value === 'notes') {
@@ -33,8 +37,18 @@ export function LeftSidebar() {
               <span>{t('navigation.record')}</span>
             </TabsTrigger>
           </TabsList>
-          {leftSidebarTab === "files" && <FileActions />}
-          {leftSidebarTab === "notes" && <MarkActions />}
+          <div className="flex items-center gap-1">
+            {leftSidebarTab === "files" && <FileActions />}
+            {leftSidebarTab === "notes" && <MarkActions />}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9 relative"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <TabsContent value="files" className="flex-1 m-0 overflow-hidden">
           <FileSidebar />
@@ -43,6 +57,7 @@ export function LeftSidebar() {
           <NoteSidebar />
         </TabsContent>
       </Tabs>
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   )
 }

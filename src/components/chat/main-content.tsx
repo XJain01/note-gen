@@ -543,18 +543,18 @@ export function MainContent({ messages, onToggleFavorite, onDeleteMessage }: Mai
             </div>
           ))
         )}
-        
-        {/* 悬浮按钮 - 回到底部 */}
-        {showScrollButton && (
-          <button
-            onClick={scrollToBottom}
-            className="fixed bottom-20 right-8 z-20 bg-white hover:bg-gray-100 text-foreground p-3 rounded-full shadow-lg border border-border transition-all hover:scale-110"
-            title="回到底部"
-          >
-            <ArrowDown className="w-5 h-5" />
-          </button>
-        )}
       </div>
+      
+      {/* 悬浮按钮 - 回到底部 - 固定在滚动容器右下角 */}
+      {showScrollButton && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-24 right-10 z-10 bg-card hover:bg-accent text-muted-foreground hover:text-foreground p-2 rounded-lg shadow-md border border-border transition-all hover:shadow-lg"
+          title="回到底部"
+        >
+          <ArrowDown className="w-4 h-4" />
+        </button>
+      )}
     </div>
   )
 }
