@@ -23,8 +23,10 @@
       {
         "title": "",
         "label": "main",
-        "width": 1360,
-        "height": 720,
+        "width": 1120,
+        "height": 700,
+        "minWidth": 1120,
+        "minHeight": 700,
         "dragDropEnabled": false,
         "titleBarStyle": "Overlay"
       }

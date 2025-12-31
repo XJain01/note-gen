@@ -29,6 +29,8 @@ import ModelCard from "./model-card";
 import CreateConfig from "./create";
 
 
+import { isTauriEnvironment } from '@/lib/tauri-utils';
+
 export default function AiPage() {
   const t = useTranslations('settings.ai');
   const {
@@ -225,6 +227,11 @@ export default function AiPage() {
 
   useEffect(() => {
     async function init() {
+      if (!isTauriEnvironment()) {
+        console.warn('Not in Tauri environment, skipping AI config initialization');
+        return;
+      }
+      
       const store = await Store.load('store.json');
       const aiModelList = await store.get<AiConfig[]>('aiModelList')
       

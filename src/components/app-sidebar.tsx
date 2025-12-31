@@ -111,29 +111,35 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <PinToggle />
-        <SidebarMenuButton 
-          isActive={pathname.includes('/core/setting')} 
-          className="md:h-8 md:p-0"
-          tooltip={{
-            children: pathname.includes('/core/setting') ? t('common.back') : t('common.settings'),
-            hidden: false,
-          }}
-          onClick={() => {
-            if (pathname.includes('/core/setting')) {
-              router.push('/core/main')
-            } else {
-              router.push('/core/setting')
-            }
-          }}
-        >
-          <div className="flex size-8 items-center justify-center rounded-lg">
-            {pathname.includes('/core/setting') ? (
-              <X className="size-4" />
-            ) : (
-              <Settings className="size-4" />
-            )}
-          </div>
-        </SidebarMenuButton>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              asChild
+              isActive={pathname.includes('/core/setting')} 
+              tooltip={{
+                children: pathname.includes('/core/setting') ? t('common.back') : t('common.settings'),
+                hidden: false,
+              }}
+            >
+              <div 
+                className="cursor-pointer" 
+                onClick={() => {
+                  if (pathname.includes('/core/setting')) {
+                    router.push('/core/main')
+                  } else {
+                    router.push('/core/setting')
+                  }
+                }}
+              >
+                {pathname.includes('/core/setting') ? (
+                  <X className="size-4" />
+                ) : (
+                  <Settings className="size-4" />
+                )}
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )

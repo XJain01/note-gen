@@ -17,8 +17,8 @@ import { useState } from 'react'
 import useMarkStore from "@/stores/mark"
 import useTagStore from "@/stores/tag"
 import useChatStore from "@/stores/chat"
-import { Store } from "@tauri-apps/plugin-store"
 import { uint8ArrayToBase64, uploadFile as uploadGithubFile, getFiles as githubGetFiles, decodeBase64ToString } from "@/lib/sync/github"
+import { isTauriEnvironment, safeLoadStore } from "@/lib/tauri-utils"
 import { getFiles as giteeGetFiles, uploadFile as uploadGiteeFile } from "@/lib/sync/gitee"
 import { uploadFile as uploadGitlabFile, getFiles as gitlabGetFiles, getFileContent as gitlabGetFileContent } from "@/lib/sync/gitlab"
 import { uploadFile as uploadGiteaFile, getFiles as giteaGetFiles, getFileContent as giteaGetFileContent } from "@/lib/sync/gitea"
@@ -38,7 +38,15 @@ export function SyncToggle() {
 
   React.useEffect(() => {
     const loadSyncProvider = async () => {
-      const store = await Store.load('store.json')
+      if (!isTauriEnvironment()) {
+        return
+      }
+      
+      const store = await safeLoadStore('store.json')
+      if (!store) {
+        return
+      }
+      
       const primaryBackupMethod = await store.get('primaryBackupMethod') as string
       if (primaryBackupMethod) {
         const providerNames: Record<string, string> = {
@@ -54,6 +62,14 @@ export function SyncToggle() {
   }, [])
 
   async function uploadAll() {
+    if (!isTauriEnvironment()) {
+      toast({
+        description: t('common.error'),
+        variant: 'destructive'
+      })
+      return
+    }
+    
     const confirmRef = await confirm(t('settings.uploadStore.uploadConfirm'))
     if (!confirmRef) return
     setSyncing(true)
@@ -68,7 +84,10 @@ export function SyncToggle() {
       const path = '.settings'
       const filename = 'store.json'
       
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json');
+      if (!store) {
+        throw new Error('Failed to load store')
+      }
       const allSettings: Record<string, any> = {}
       const entries = await store.entries()
       for (const [key, value] of entries) {
@@ -157,6 +176,14 @@ export function SyncToggle() {
   }
 
   async function downloadAll() {
+    if (!isTauriEnvironment()) {
+      toast({
+        description: t('common.error'),
+        variant: 'destructive'
+      })
+      return
+    }
+    
     const res = await confirm(t('settings.uploadStore.downloadConfirm'))
     if (!res) return
     setSyncing(true)
@@ -176,7 +203,10 @@ export function SyncToggle() {
       // 下载配置
       const path = '.settings'
       const filename = 'store.json'
-      const store = await Store.load('store.json');
+      const store = await safeLoadStore('store.json');
+      if (!store) {
+        throw new Error('Failed to load store')
+      }
       
       const localSettings: Record<string, any> = {}
       const entries = await store.entries()

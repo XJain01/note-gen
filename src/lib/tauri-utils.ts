@@ -18,7 +18,10 @@ export function isTauriEnvironment(): boolean {
  */
 export async function safeLoadStore(filename: string = 'store.json'): Promise<Store | null> {
   if (!isTauriEnvironment()) {
-    console.warn('Not in Tauri environment, Store.load() skipped')
+    // 只在开发环境显示警告，避免生产环境控制台污染
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('Not in Tauri environment, Store.load() skipped')
+    }
     return null
   }
 
@@ -88,7 +91,9 @@ export async function safeInvoke<T>(
 ): Promise<T> {
   if (!isTauriEnvironment()) {
     if (defaultValue !== undefined) {
-      console.warn(`Not in Tauri environment, returning default value for command: ${command}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`Not in Tauri environment, returning default value for command: ${command}`)
+      }
       return defaultValue
     }
     throw new Error(`Cannot invoke Tauri command "${command}" outside Tauri environment`)

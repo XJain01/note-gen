@@ -17,6 +17,9 @@ export interface Chat {
   ragSources?: string // RAG引用的文件名，JSON字符串数组
   agentHistory?: string // Agent执行历史，JSON字符串
   thinking?: string // AI 思考过程
+  category?: string // 消息分类（笔记、待办、备忘等）
+  isFavorite?: boolean // 是否收藏
+  title?: string // 消息标题
 }
 
 // 创建 chats 表
@@ -80,6 +83,33 @@ export async function initChatsDb() {
   } catch {
     // 如果列已存在，忽略错误
   }
+  
+  // 迁移：为现有表添加 category 列（如果不存在）
+  try {
+    await db.execute(`
+      alter table chats add column category text default null
+    `)
+  } catch {
+    // 如果列已存在，忽略错误
+  }
+  
+  // 迁移：为现有表添加 isFavorite 列（如果不存在）
+  try {
+    await db.execute(`
+      alter table chats add column isFavorite boolean default false
+    `)
+  } catch {
+    // 如果列已存在，忽略错误
+  }
+  
+  // 迁移：为现有表添加 title 列（如果不存在）
+  try {
+    await db.execute(`
+      alter table chats add column title text default null
+    `)
+  } catch {
+    // 如果列已存在，忽略错误
+  }
 }
 
 // 插入一条 chat
@@ -87,8 +117,8 @@ export async function insertChat(chat: Omit<Chat, 'id' | 'createdAt'>) {
   const db = await getDb()
   const createdAt = Date.now();
   return await db.execute(
-    "insert into chats (tagId, content, role, type, image, images, inserted, createdAt, ragSources, agentHistory, thinking) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
-    [chat.tagId, chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, createdAt, chat.ragSources, chat.agentHistory, chat.thinking])
+    "insert into chats (tagId, content, role, type, image, images, inserted, createdAt, ragSources, agentHistory, thinking, category, isFavorite, title) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+    [chat.tagId, chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, createdAt, chat.ragSources, chat.agentHistory, chat.thinking, chat.category, chat.isFavorite ? 1 : 0, chat.title])
 }
 
 // 获取所有 chats
@@ -116,8 +146,8 @@ export async function insertChats(chats: Chat[]) {
   const db = await getDb()
   for (const chat of chats) {
     await db.execute(
-      "insert into chats (tagId, content, role, type, image, images, inserted, createdAt, ragSources) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-      [chat.tagId, chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, chat.createdAt, chat.ragSources]
+      "insert into chats (tagId, content, role, type, image, images, inserted, createdAt, ragSources, category, isFavorite, title) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+      [chat.tagId, chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, chat.createdAt, chat.ragSources, chat.category, chat.isFavorite ? 1 : 0, chat.title]
     )
   }
 }
@@ -135,8 +165,8 @@ export async function deleteAllChats() {
 export async function updateChat(chat: Chat) {
   const db = await getDb()
   return await db.execute(
-    "update chats set content = $1, role = $2, type = $3, image = $4, images = $5, inserted = $6, ragSources = $7, agentHistory = $8, thinking = $9 where id = $10",
-    [chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, chat.ragSources, chat.agentHistory, chat.thinking, chat.id])
+    "update chats set content = $1, role = $2, type = $3, image = $4, images = $5, inserted = $6, ragSources = $7, agentHistory = $8, thinking = $9, category = $10, isFavorite = $11, title = $12 where id = $13",
+    [chat.content, chat.role, chat.type, chat.image, chat.images, chat.inserted ? 1 : 0, chat.ragSources, chat.agentHistory, chat.thinking, chat.category, chat.isFavorite ? 1 : 0, chat.title, chat.id])
 }
 
 // 清空 tagId 下的所有 chats

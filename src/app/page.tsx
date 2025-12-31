@@ -10,14 +10,14 @@ export default function Home() {
     // 如果不在 Tauri 环境中，直接导航到默认页面
     if (!isTauriEnvironment()) {
       console.warn('Not running in Tauri environment, redirecting to default page')
-      router.push('/core/main')
+      router.push('/core/notes')
       return
     }
 
     try {
       const store = await safeLoadStore('store.json')
       if (!store) {
-        router.push('/core/main')
+        router.push('/core/notes')
         return
       }
 
@@ -31,23 +31,23 @@ export default function Home() {
           router.push('/mobile/chat')
         }
       } else {
-        // PC 端逻辑:将旧路径重定向到新的 /core/main
-        if (currentPage === '/core/article' || currentPage === '/core/record') {
-          currentPage = '/core/main'
-          await store.set('currentPage', '/core/main')
+        // PC 端逻辑:将旧路径重定向到新的笔记页面
+        if (currentPage === '/core/article' || currentPage === '/core/record' || currentPage === '/core/main') {
+          currentPage = '/core/notes'
+          await store.set('currentPage', '/core/notes')
           await store.save()
         }
         
         if (!currentPage?.includes('/mobile')) {
-          router.push(currentPage || '/core/main')
+          router.push(currentPage || '/core/notes')
         } else {
-          router.push('/core/main')
+          router.push('/core/notes')
         }
       }
     } catch (error) {
       console.error('Error initializing app:', error)
       // 发生错误时,导航到默认页面
-      router.push('/core/main')
+      router.push('/core/notes')
     }
   }
   useEffect(() => {

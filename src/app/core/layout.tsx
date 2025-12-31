@@ -16,10 +16,10 @@ import initQuickRecordText from "@/lib/shortcut/quick-record-text"
 import { useRouter, usePathname } from "next/navigation"
 import initShowWindow from "@/lib/shortcut/show-window"
 import { initMcp } from "@/lib/mcp/init"
-import { SearchDialog } from "@/components/search-dialog"
 import { reportAppStart } from "@/lib/event-report"
 import { TitleBar } from "@/components/title-bar"
 import { safeSetToStore } from "@/lib/tauri-utils"
+import { MainSidebar } from "@/components/main-sidebar"
 
 export default function RootLayout({
   children,
@@ -34,14 +34,13 @@ export default function RootLayout({
   const { initIsLinkMark } = useChatStore()
   const router = useRouter()
   const pathname = usePathname()
-  const [searchOpen, setSearchOpen] = useState(false)
 
-  // 重定向旧路径到新的 /core/main
+  // 重定向旧路径到新的笔记页面
   useEffect(() => {
     async function redirectOldPaths() {
-      if (pathname === '/core/article' || pathname === '/core/record') {
-        await safeSetToStore('currentPage', '/core/main')
-        router.replace('/core/main')
+      if (pathname === '/core/article' || pathname === '/core/record' || pathname === '/core/main') {
+        await safeSetToStore('currentPage', '/core/notes')
+        router.replace('/core/notes')
       }
     }
     redirectOldPaths()
@@ -94,16 +93,9 @@ export default function RootLayout({
     }
   }, [currentLocale])
 
-  // 禁用浏览器后退快捷键（Backspace）和添加搜索快捷键（Cmd/Ctrl+F）
+  // 禁用浏览器后退快捷键（Backspace）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 搜索快捷键：Cmd+F (macOS) 或 Ctrl+F (Windows/Linux)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        setSearchOpen(true)
-        return
-      }
-
       // 如果按下 Backspace 键，且不在可编辑元素中
       if (e.key === 'Backspace') {
         const target = e.target as HTMLElement
@@ -136,11 +128,13 @@ export default function RootLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <TitleBar onSearchClick={() => setSearchOpen(true)} />
-      <main className="flex flex-1 flex-col overflow-hidden w-full h-[calc(100vh-36px)] mt-9">
-        {children}
-      </main>
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <TitleBar />
+      <div className="flex h-[calc(100vh-36px)] mt-9">
+        <MainSidebar />
+        <main className="flex flex-1 flex-col overflow-hidden w-full">
+          {children}
+        </main>
+      </div>
     </ThemeProvider>
   );
 }
