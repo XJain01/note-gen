@@ -500,7 +500,13 @@ export function MainContent({ messages, onToggleFavorite, onDeleteMessage }: Mai
                     <button 
                       className="text-muted-foreground hover:text-foreground transition-colors"
                       title="更多"
+                      data-allow-context-menu="true"
                       onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenuId(openMenuId === message.id ? null : message.id)
+                      }}
+                      onContextMenu={(e) => {
+                        // 右键点击时也显示菜单
                         e.stopPropagation()
                         setOpenMenuId(openMenuId === message.id ? null : message.id)
                       }}

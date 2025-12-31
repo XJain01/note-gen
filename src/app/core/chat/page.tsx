@@ -281,7 +281,18 @@ export default function ChatPage() {
   })
 
   return (
-    <div className="flex h-full">
+    <div 
+      className="flex h-full"
+      onContextMenu={(e) => {
+        // 禁用默认右键菜单，除非点击的是特定元素
+        const target = e.target as HTMLElement
+        // 允许在特定元素上显示自定义右键菜单
+        // 可以通过 data-allow-context-menu 属性标记允许右键菜单的元素
+        if (!target.closest('[data-allow-context-menu]')) {
+          e.preventDefault()
+        }
+      }}
+    >
       {/* 分类列表区域 */}
       <CategoryList 
         selectedCategory={selectedCategory}
