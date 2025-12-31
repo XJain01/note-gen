@@ -75,7 +75,7 @@ export function AppSidebar({ onSearchClick }: AppSidebarProps) {
   return (
     <Sidebar 
       collapsible="none"
-      className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r h-[calc(100vh-36px)] mt-9"
+      className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r h-screen fixed top-0 left-0 z-[10000]"
     >
       <SidebarHeader>
         <SidebarMenu>

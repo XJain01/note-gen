@@ -22,7 +22,7 @@ export function MainSidebar() {
   }
 
   return (
-    <div className="w-20 bg-background border-r border-border flex flex-col items-center py-4">
+    <div className="w-20 bg-background border-r border-border flex flex-col items-center py-4 fixed top-0 left-0 h-screen z-[10000]">
       {/* Logo - 闲虾 */}
       <div className="w-12 h-12 rounded-lg bg-emerald-500 flex items-center justify-center mb-6 cursor-pointer"
            onClick={() => router.push('/core/home')}>
@@ -69,12 +69,21 @@ export function MainSidebar() {
 
       {/* Bottom Icons */}
       <div className="flex flex-col items-center gap-6 mt-auto">
-        <button 
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-accent transition-all duration-200"
-          onClick={() => router.push('/core/setting')}
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        <div className="flex flex-col items-center gap-1">
+          <button 
+            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+              pathname.includes('/core/setting')
+                ? 'bg-emerald-50 dark:bg-emerald-950' 
+                : 'hover:bg-accent'
+            }`}
+            onClick={() => router.push('/core/setting')}
+          >
+            <Settings className={`w-5 h-5 ${pathname.includes('/core/setting') ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+          </button>
+          <span className={`text-xs transition-colors ${
+            pathname.includes('/core/setting') ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+          }`}>设置</span>
+        </div>
       </div>
     </div>
   )

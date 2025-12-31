@@ -129,8 +129,8 @@ export default function RootLayout({
       disableTransitionOnChange
     >
       <TitleBar />
-      <div className="flex h-[calc(100vh-36px)] mt-9">
-        <MainSidebar />
+      <MainSidebar />
+      <div className="flex h-[calc(100vh-36px)] mt-9 ml-20">
         <main className="flex flex-1 flex-col overflow-hidden w-full">
           {children}
         </main>
