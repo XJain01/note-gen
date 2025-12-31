@@ -1511,5 +1511,19 @@
       "model": "大模型识别",
       "modelDesc": "需配置STT模型，更准确"
     }
+  },
+  "chat": {
+    "organize": {
+      "title": "整理对话为笔记",
+      "selectFolder": "选择文件夹",
+      "selectFolderPlaceholder": "选择保存位置",
+      "fileName": "文件名",
+      "fileNamePlaceholder": "请输入文件名",
+      "fileNameRequired": "请输入文件名",
+      "fileExists": "文件已存在，请使用其他文件名",
+      "noPrimaryModel": "未配置主模型，无法整理",
+      "organizeSuccess": "整理成功: {title}",
+      "organizeError": "整理失败"
+    }
   }
 }

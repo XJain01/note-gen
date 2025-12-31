@@ -1421,5 +1421,19 @@
     "tools": "個工具",
     "connecting": "連線中",
     "disconnected": "未連接"
+  },
+  "chat": {
+    "organize": {
+      "title": "整理對話為筆記",
+      "selectFolder": "選擇資料夾",
+      "selectFolderPlaceholder": "選擇儲存位置",
+      "fileName": "檔案名稱",
+      "fileNamePlaceholder": "請輸入檔案名稱",
+      "fileNameRequired": "請輸入檔案名稱",
+      "fileExists": "檔案已存在，請使用其他檔案名稱",
+      "noPrimaryModel": "未配置主模型，無法整理",
+      "organizeSuccess": "整理成功: {title}",
+      "organizeError": "整理失敗"
+    }
   }
 }

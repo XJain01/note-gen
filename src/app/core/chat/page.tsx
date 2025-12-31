@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { safeSetToStore } from '@/lib/tauri-utils'
 import { CategoryList, Category } from '@/components/chat/category-list'
 import { MainContent, Message, ContentBlock } from '@/components/chat/main-content'
 import { BottomInput } from '@/components/chat/bottom-input'
+import { OrganizeChatDialog } from '@/components/chat/organize-chat-dialog'
 import { FileText, Clock, BookMarked, FolderPlus } from 'lucide-react'
 import { initChatsDb, getChats, insertChat, updateChat, Chat, deleteChat } from '@/db/chats'
 import { isTauriEnvironment } from '@/lib/tauri-utils'
@@ -21,6 +22,9 @@ export default function ChatPage() {
   const [selectedCategory, setSelectedCategory] = useState('全部')
   const [messages, setMessages] = useState<Message[]>([])
   const [chatRecords, setChatRecords] = useState<Chat[]>([])
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
+  const [selectedCategoryForOrganize, setSelectedCategoryForOrganize] = useState<string | null>(null)
+  const [isOrganizeDialogOpen, setIsOrganizeDialogOpen] = useState(false)
   
   // 管理分类列表
   const [customCategories, setCustomCategories] = useState<Category[]>(() => {
@@ -30,11 +34,13 @@ export default function ChatPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
-          // 恢复图标组件
-          return parsed.map((cat: any) => ({
-            ...cat,
-            icon: FolderPlus // 自定义分类默认使用 FolderPlus 图标
-          }))
+          // 恢复图标组件，并过滤掉"收藏"和默认分类
+          return parsed
+            .filter((cat: any) => cat.label !== '收藏' && cat.label !== '全部' && cat.label !== '笔记' && cat.label !== '待办' && cat.label !== '备忘')
+            .map((cat: any) => ({
+              ...cat,
+              icon: FolderPlus // 自定义分类默认使用 FolderPlus 图标
+            }))
         } catch {
           return []
         }
@@ -45,8 +51,17 @@ export default function ChatPage() {
   
   // 保存自定义分类到 localStorage
   const handleCategoriesChange = (categories: Category[]) => {
+    // 过滤掉"收藏"和默认分类，只保留自定义分类
+    const filteredCategories = categories.filter(cat => 
+      cat.label !== '收藏' && 
+      cat.label !== '全部' && 
+      cat.label !== '笔记' && 
+      cat.label !== '待办' && 
+      cat.label !== '备忘'
+    )
+    
     // 移除计数信息，只保留基本字段
-    const categoriesWithoutCount = categories.map(cat => ({
+    const categoriesWithoutCount = filteredCategories.map(cat => ({
       icon: cat.icon,
       label: cat.label,
       count: 0,
@@ -56,7 +71,7 @@ export default function ChatPage() {
     
     if (typeof window !== 'undefined') {
       // 只保存必要的字段，不保存图标组件
-      const toSave = categories.map(cat => ({
+      const toSave = filteredCategories.map(cat => ({
         label: cat.label,
         count: 0,
         color: cat.color
@@ -280,6 +295,37 @@ export default function ChatPage() {
     }
   })
 
+  // 处理整理单个消息（已弃用，但保留以防其他地方调用）
+  const handleOrganizeMessage = (id: string) => {
+    setSelectedChatId(id)
+    setSelectedCategoryForOrganize(null)
+    setIsOrganizeDialogOpen(true)
+  }
+
+  // 处理整理分类
+  const handleOrganizeCategory = (category: string) => {
+    setSelectedCategoryForOrganize(category)
+    setSelectedChatId(null)
+    setIsOrganizeDialogOpen(true)
+  }
+
+  // 获取选中的聊天数据（单个或分类）
+  const chatsToOrganize = useMemo(() => {
+    if (selectedChatId) {
+      // 单个聊天记录
+      const chat = chatRecords.find(chat => chat.id.toString() === selectedChatId)
+      return chat ? [chat] : []
+    } else if (selectedCategoryForOrganize) {
+      // 整个分类的聊天记录
+      if (selectedCategoryForOrganize === '收藏') {
+        return chatRecords.filter(chat => chat.isFavorite)
+      } else {
+        return chatRecords.filter(chat => chat.category === selectedCategoryForOrganize)
+      }
+    }
+    return []
+  }, [selectedChatId, selectedCategoryForOrganize, chatRecords])
+
   return (
     <div 
       className="flex h-full"
@@ -301,6 +347,7 @@ export default function ChatPage() {
         onCategoriesChange={handleCategoriesChange}
         favoriteCount={favoriteCount}
         defaultCategories={defaultCategoriesWithCount}
+        onOrganizeCategory={handleOrganizeCategory}
       />
       
       {/* 主内容区域 */}
@@ -315,6 +362,13 @@ export default function ChatPage() {
           categories={allCategories}
         />
       </div>
+
+      {/* 整理对话弹窗 */}
+      <OrganizeChatDialog
+        open={isOrganizeDialogOpen}
+        onOpenChange={setIsOrganizeDialogOpen}
+        chats={chatsToOrganize}
+      />
     </div>
   )
 }

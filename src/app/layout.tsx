@@ -1,5 +1,6 @@
 'use client'
 import { Toaster } from "@/components/ui/toaster"
+import { OrganizeStatusBar } from "@/components/organize-status-bar"
 import "./globals.scss";
 import 'react-photo-view/dist/react-photo-view.css';
 import { Suspense } from "react";
@@ -39,6 +40,7 @@ export default function RootLayout({
         <body suppressHydrationWarning>
           <Suspense>
             <NextIntlProvider>
+              <OrganizeStatusBar />
               {children}
             </NextIntlProvider>
           </Suspense>

@@ -50,3 +50,25 @@ export function scrollToBottom() {
     })
   }
 }
+
+/**
+ * 将 base64 或 data URL 转换为 File 对象
+ * @param dataUrl base64 数据 URL (data:image/png;base64,...)
+ * @param fileName 文件名
+ * @returns File 对象
+ */
+export async function convertToFile(dataUrl: string, fileName: string): Promise<File> {
+  // 从 data URL 中提取 MIME 类型和 base64 数据
+  const arr = dataUrl.split(',')
+  const mimeMatch = arr[0].match(/:(.*?);/)
+  const mime = mimeMatch ? mimeMatch[1] : 'image/png'
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+  
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+  
+  return new File([u8arr], fileName, { type: mime })
+}

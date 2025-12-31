@@ -1556,5 +1556,19 @@
       "pending": "Pendente {progress}%",
       "synced": "Sincronizado"
     }
+  },
+  "chat": {
+    "organize": {
+      "title": "Organizar Chat como Nota",
+      "selectFolder": "Selecionar Pasta",
+      "selectFolderPlaceholder": "Escolha o local de salvamento",
+      "fileName": "Nome do Arquivo",
+      "fileNamePlaceholder": "Digite o nome do arquivo",
+      "fileNameRequired": "Por favor, digite um nome de arquivo",
+      "fileExists": "Arquivo já existe, use um nome diferente",
+      "noPrimaryModel": "Nenhum modelo primário configurado, não é possível organizar",
+      "organizeSuccess": "Organizado com sucesso: {title}",
+      "organizeError": "Falha ao organizar"
+    }
   }
 }

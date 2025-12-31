@@ -7,7 +7,9 @@ import { EmojiPicker } from './emoji-picker'
 import { FilePickerDialog } from './file-picker-dialog'
 import type { ContentBlock, TextFormat, ListItem } from './main-content'
 import { open } from '@tauri-apps/plugin-dialog'
-import { readFile } from '@tauri-apps/plugin-fs'
+import { readFile, writeFile, mkdir, exists, BaseDirectory } from '@tauri-apps/plugin-fs'
+import { convertFileSrc } from '@tauri-apps/api/core'
+import { appDataDir, join } from '@tauri-apps/api/path'
 import { isTauriEnvironment } from '@/lib/tauri-utils'
 
 interface BottomInputProps {
@@ -132,7 +134,7 @@ export function BottomInput({ onSendMessage, categories }: BottomInputProps) {
     // 空函数，保持兼容
   }
 
-  // 处理图片上传 - 直接插入到光标位置作为占位符
+  // 处理图片上传 - 保存到本地 chat-images 目录，使用 asset:// URL
   const handleImageUpload = async () => {
     if (!isTauriEnvironment()) return
     
@@ -150,26 +152,42 @@ export function BottomInput({ onSendMessage, categories }: BottomInputProps) {
         const fileName = filePath.split(/[\\/]/).pop() || 'image'
         
         try {
-          // 读取文件并转换为 base64
+          // 读取源文件
           const fileData = await readFile(filePath)
           
-          // 检查文件大小，如果超过1MB则提示
-          if (fileData.length > 1024 * 1024) {
-            alert('图片文件过大，请选择小于1MB的图片')
+          // 检查文件大小，如果超过5MB则提示
+          if (fileData.length > 5 * 1024 * 1024) {
+            alert('图片文件过大，请选择小于5MB的图片')
             return
           }
           
-          const base64 = arrayBufferToBase64(new Uint8Array(fileData))
-          const mimeType = fileName.endsWith('.png') ? 'image/png' 
-            : fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') ? 'image/jpeg'
-            : fileName.endsWith('.gif') ? 'image/gif'
-            : 'image/webp'
+          // 保存到 AppData/chat-images 目录
+          const chatImagesDir = 'chat-images'
+          const chatImagesDirExists = await exists(chatImagesDir, { baseDir: BaseDirectory.AppData })
+          if (!chatImagesDirExists) {
+            await mkdir(chatImagesDir, { recursive: true, baseDir: BaseDirectory.AppData })
+          }
           
-          // 将图片添加到附件中（用于发送），同时在输入框中插入占位符
-          const imageUrl = `data:${mimeType};base64,${base64}`
+          // 生成唯一文件名
+          const timestamp = Date.now()
+          const randomSuffix = Math.random().toString(36).substring(2, 6)
+          const ext = fileName.split('.').pop() || 'png'
+          const sanitizedName = fileName.replace(/[\/\\:*?"<>|]/g, '_').replace(/\.\w+$/, '')
+          const newFileName = `${sanitizedName}_${timestamp}_${randomSuffix}.${ext}`
+          
+          // 写入文件
+          const destPath = `${chatImagesDir}/${newFileName}`
+          await writeFile(destPath, fileData, { baseDir: BaseDirectory.AppData })
+          
+          // 获取完整路径并转换为 asset:// URL
+          const appData = await appDataDir()
+          const fullPath = await join(appData, destPath)
+          const assetUrl = convertFileSrc(fullPath)
+          
+          // 将图片添加到附件中
           setAttachments(prev => [
             ...prev,
-            { type: 'image', url: imageUrl, name: fileName }
+            { type: 'image', url: assetUrl, name: fileName }
           ])
           
           // 在光标位置插入图片占位符
@@ -188,8 +206,8 @@ export function BottomInput({ onSendMessage, categories }: BottomInputProps) {
             }, 0)
           }
         } catch (err) {
-          console.error('Failed to read image file:', err)
-          alert('读取图片失败，请重试')
+          console.error('Failed to save image file:', err)
+          alert('保存图片失败，请重试')
         }
       }
     } catch (error) {

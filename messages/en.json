@@ -1048,6 +1048,18 @@
       "confirmNewDescription": "Are you sure you want to create a new tag to start a conversation?",
       "confirmRemove": "Delete Tag",
       "confirmRemoveDescription": "Please note that deleting this tag will also delete all records within it. Please confirm again.",
+      "organize": {
+        "title": "Organize Chat as Note",
+        "selectFolder": "Select Folder",
+        "selectFolderPlaceholder": "Choose save location",
+        "fileName": "File Name",
+        "fileNamePlaceholder": "Enter file name",
+        "fileNameRequired": "Please enter a file name",
+        "fileExists": "File already exists, please use a different name",
+        "noPrimaryModel": "No primary model configured, cannot organize",
+        "organizeSuccess": "Organized successfully: {title}",
+        "organizeError": "Failed to organize"
+      },
       "content": {
         "organize": "Organize your records into an article:"
       },
@@ -1547,6 +1559,20 @@
       "calculating": "Calculating",
       "pending": "Pending {progress}%",
       "synced": "Synced"
+    }
+  },
+  "chat": {
+    "organize": {
+      "title": "Organize Chat as Note",
+      "selectFolder": "Select Folder",
+      "selectFolderPlaceholder": "Choose save location",
+      "fileName": "File Name",
+      "fileNamePlaceholder": "Enter file name",
+      "fileNameRequired": "Please enter a file name",
+      "fileExists": "File already exists, use a different name",
+      "noPrimaryModel": "No primary model configured, unable to organize",
+      "organizeSuccess": "Successfully organized: {title}",
+      "organizeError": "Failed to organize"
     }
   }
 }
